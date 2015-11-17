@@ -80,6 +80,13 @@ g_thread_abort (gint         status,
 
 /* {{{1 GMutex */
 
+#undef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+#undef PTHREAD_ERRORCHECKING_ENABLED
+
+#if defined(PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP) || defined(PTHREAD_ERRORCHECKING_ENABLED)
+#define PTHREAD_MUTEX_ATTR
+#endif
+
 #if !defined(USE_NATIVE_MUTEX)
 
 static pthread_mutex_t *
@@ -88,7 +95,7 @@ g_mutex_impl_new (void)
   pthread_mutexattr_t *pattr = NULL;
   pthread_mutex_t *mutex;
   gint status;
-#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+#ifdef PTHREAD_MUTEX_ATTR
   pthread_mutexattr_t attr;
 #endif
 
@@ -96,16 +103,21 @@ g_mutex_impl_new (void)
   if G_UNLIKELY (mutex == NULL)
     g_thread_abort (errno, "malloc");
 
-#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+#ifdef PTHREAD_MUTEX_ATTR
   pthread_mutexattr_init (&attr);
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
   pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+#endif
+#ifdef PTHREAD_ERRORCHECKING_ENABLED
+  pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ERRORCHECK);
+#endif
   pattr = &attr;
 #endif
 
   if G_UNLIKELY ((status = pthread_mutex_init (mutex, pattr)) != 0)
     g_thread_abort (status, "pthread_mutex_init");
 
-#ifdef PTHREAD_ADAPTIVE_MUTEX_NP
+#ifdef PTHREAD_MUTEX_ATTR
   pthread_mutexattr_destroy (&attr);
 #endif
 
