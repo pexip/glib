@@ -30,6 +30,7 @@ config.guess
 config.h
 config.h.in
 config.h-new
+config.h.in~
 config.log
 config.lt
 config.rpath
