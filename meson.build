@@ -1456,7 +1456,7 @@ else
       if libz_dep.found()
         zlib_libname = '-lzlib'
       else
-        zlib_dep = subproject('zlib').get_variable('zlib_dep')
+        libz_dep = subproject('zlib').get_variable('zlib_dep')
       endif
     endif
   endif
