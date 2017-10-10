@@ -2340,6 +2340,7 @@ g_queue_peek_nth_link
 g_queue_link_index
 g_queue_unlink
 g_queue_delete_link
+g_queue_insert_link_before
 </SECTION>
 
 <SECTION>
