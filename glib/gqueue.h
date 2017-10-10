@@ -199,6 +199,10 @@ void     g_queue_unlink         (GQueue           *queue,
 GLIB_AVAILABLE_IN_ALL
 void     g_queue_delete_link    (GQueue           *queue,
                                  GList            *link_);
+GLIB_AVAILABLE_IN_2_56
+void     g_queue_insert_link_before (GQueue       *queue,
+                                     GList        *sibling,
+                                     GList        *link);
 
 G_END_DECLS
 
