@@ -1148,3 +1148,38 @@ g_queue_insert_sorted (GQueue           *queue,
 
   g_queue_insert_before (queue, list, data);
 }
+
+/**
+ * g_queue_insert_link_before:
+ * @queue: a #GQueue
+ * @sibling: (nullable): a #GList link that must be part of @queue, or %NULL to
+ *   push at the tail of the queue.
+ * @link: the new link to insert
+ *
+ * Inserts @data into @queue before @sibling. It allows to reuse links
+ * returned from g_queue_pop_tail_link, g_queue_pop_head_link etc
+ * without memory reallocations:
+ *   GList *link = g_queue_pop_tail_link (queue);
+ *
+ *   ... change link->data;
+ *
+ *   g_queue_insert_link_before (queue, queue->head, link);
+ *
+ */
+void
+g_queue_insert_link_before (GQueue * queue, GList * sibling, GList * link)
+{
+  if (NULL == sibling)
+    g_queue_push_tail_link (queue, link);
+  else {
+    ++queue->length;
+
+    link->prev = sibling->prev;
+    link->next = sibling;
+    sibling->prev = link;
+    if (link->prev)
+      link->prev->next = link;
+    else
+      queue->head = link;
+  }
+}
