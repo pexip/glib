@@ -1,5 +1,8 @@
 common_gio_tests_deps = [libglib_dep, libgmodule_dep, libgobject_dep, libgio_dep]
 
+#FIXME: Some condition here perhaps?
+common_gio_tests_deps += [libintl]
+
 subdir('gdbus-object-manager-example')
 
 gengiotypefuncs_prog = find_program('gengiotypefuncs.py')
@@ -282,6 +285,7 @@ foreach test_name : gio_tests
     # it automatically as a test by default
     extra_deps = [libgdbus_example_objectmanager_dep]
   endif
+
   exe = executable(test_name, srcs,
       install : false,
       c_args : test_c_args,

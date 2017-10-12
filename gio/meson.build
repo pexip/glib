@@ -20,7 +20,7 @@ if host_system == 'windows'
   gnetworking_h_wspiapi_include = '#include <wspiapi.h>'
 endif
 
-if host_system.contains('android')
+#if host_system.contains('android')
   # Android does not have C_IN in public headers, we define it wherever necessary
   if not cc.compiles('''#include <sys/types.h>
                         #include <arpa/nameser.h>
@@ -36,7 +36,7 @@ if host_system.contains('android')
       error('Could not find required includes for ARPA C_IN')
     endif
   endif
-endif
+#endif
 
 network_libs = [ ]
 network_args = [ ]

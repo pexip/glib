@@ -220,6 +220,9 @@ if use_pcre_static_flag
   pcre_static_args = ['-DPCRE_STATIC']
 endif
 
+noseh_link_args += ['-Wl,-framework,CoreFoundation']
+noseh_link_args += ['-Wl,-framework,Carbon']
+
 libglib = shared_library('glib-2.0',
   glib_dtrace_obj, glib_dtrace_hdr,
   sources : [deprecated_sources, glib_sources, thread_src, plat_src],

@@ -1416,7 +1416,7 @@ glib_conf.set('USE_SYSTEM_PCRE', use_system_pcre)
 
 use_pcre_static_flag = false
 
-if host_system == 'windows'
+if host_system != 'linux'
   if not use_system_pcre
     use_pcre_static_flag = true
   else
@@ -1464,7 +1464,7 @@ endif
 
 # Only used on non-glibc targets
 libintl = cc.find_library('intl', required : false)
-if host_system == 'windows' and not libintl.found()
+if host_system != 'linux' and not libintl.found()
   # Used only when the gettext library is not available (MSVC, not MinGW)
   libintl = subproject('proxy-libintl').get_variable('intl_dep')
   glib_conf.set('HAVE_DCGETTEXT', 1)
