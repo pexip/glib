@@ -100,8 +100,10 @@ glib_conf.set('ENABLE_NLS', 1)
 # These should not contain " quotes around the values
 glib_conf.set('PACKAGE', 'glib')
 glib_conf.set('VERSION', meson.project_version())
-glib_conf.set('prefix', glib_prefix)
-glib_conf.set('exec_prefix', glib_prefix)
+# join_paths() will convert any backslashes in windows paths to forward slashes.
+# pkg-config files should always have paths with forward slashes.
+glib_conf.set('prefix', join_paths(glib_prefix))
+glib_conf.set('exec_prefix', join_paths(glib_prefix))
 glib_conf.set('libdir', glib_libdir)
 glib_conf.set('includedir', glib_includedir)
 glib_conf.set('datadir', glib_datadir)
