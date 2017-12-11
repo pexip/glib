@@ -18,9 +18,7 @@ if host_system == 'windows'
   # inline workarounds for getaddrinfo, getnameinfo and freeaddrinfo if
   # they aren't present at run-time (on Windows 2000).
   gnetworking_h_wspiapi_include = '#include <wspiapi.h>'
-endif
-
-if host_system.contains('android')
+elif not host_system.contains('android')
   # Android does not have C_IN in public headers, we define it wherever necessary
   if not cc.compiles('''#include <sys/types.h>
                         #include <arpa/nameser.h>
