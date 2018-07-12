@@ -792,7 +792,7 @@ libgio = library('gio-2.0',
                   platform_deps, network_libs],
   c_args : gio_c_args,
   # intl.lib is not compatible with SAFESEH
-  link_args : noseh_link_args,
+  link_args : [noseh_link_args, dylib_link_args],
 )
 
 giomodulesdir = get_option('gio_module_dir')
