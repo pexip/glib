@@ -366,6 +366,11 @@ add_project_arguments(cc.get_supported_arguments(test_c_args), language: 'c')
 # improve this.
 glib_link_flags = cc.get_supported_link_arguments(test_c_link_args)
 
+if host_system == 'darwin'
+  dylib_version = '@0@.@1@.@2@'.format(binary_age, interface_age, micro_version)
+  glib_link_flags += ['-compatibility_version', dylib_version, '-current_version', dylib_version]
+endif
+
 # Windows Support (7+)
 if host_system == 'windows'
   glib_conf.set('_WIN32_WINNT', '0x0601')
