@@ -44,6 +44,7 @@ soversion = 0
 # current = minor * 100 + micro
 library_version = '@0@.@1@.@2@'.format(soversion, binary_age - interface_age, interface_age)
 
+dylib_link_args=[]
 if host_system == 'darwin'
   dylib_version = '@0@.@1@.@2@'.format(binary_age, interface_age, micro_version)
   dylib_link_args = ['-compatibility_version', dylib_version, '-current_version', dylib_version]
