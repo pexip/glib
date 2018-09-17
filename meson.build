@@ -198,6 +198,14 @@ glibconfig_conf.set('glib_os', glib_os)
 # for dependencies that don't normally come with pkg-config files for Visual Studio builds
 buildtype = get_option('buildtype')
 
+
+
+# Pexip HACK until we can merge with upstreams solution
+glib_debug_cflags = ['-DG_DISABLE_CAST_CHECKS', '-DG_DISABLE_ASSERT', '-DG_DISABLE_CHECKS']
+add_project_arguments(glib_debug_cflags, language: 'c')
+
+
+
 # check for header files
 
 headers = [
