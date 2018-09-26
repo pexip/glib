@@ -53,7 +53,7 @@
  * implement the atomic operations in a lock-free manner.
  */
 
-#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
+#if defined (__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4) || defined (G_PLATFORM_WIN32)
 
 /**
  * g_atomic_int_get:
