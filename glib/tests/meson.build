@@ -16,7 +16,6 @@ glib_tests = [
   'dir',
   'environment',
   'error',
-  'fileutils',
   'gdatetime',
   'gvariant',
   'hash',
@@ -78,7 +77,7 @@ glib_tests = [
 ]
 
 if host_machine.system() != 'windows'
-  glib_tests += [ 'unix', 'include' ]
+  glib_tests += [ 'unix', 'include', 'fileutils']
 endif
 
 if cc.get_id() != 'msvc'
