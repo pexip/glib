@@ -1348,6 +1348,7 @@ test_month_names (void)
 
   setlocale (LC_ALL, "lt_LT.utf-8");
 #ifdef G_OS_WIN32
+  #define SUBLANG_LITHUANIAN_LITHUANIA 0x01
   SetThreadLocale (MAKELCID (MAKELANGID (LANG_LITHUANIAN, SUBLANG_LITHUANIAN_LITHUANIA), SORT_DEFAULT));
 #endif
   if (strstr (setlocale (LC_ALL, NULL), "lt_LT") != NULL)
