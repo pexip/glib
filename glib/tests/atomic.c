@@ -33,6 +33,8 @@ test_types (void)
   int *ip, *ip2;
   gsize gs, gs2;
   gboolean res;
+  gpointer deadbeef = GUINT_TO_POINTER (0xDEADBEEF);
+  gpointer baadf00d = GUINT_TO_POINTER (0xBAADF00D);
 
   csp = &s;
   cspp = &csp;
@@ -147,6 +149,13 @@ test_types (void)
   g_assert_true (res);
   g_assert_true (old_str == str);
 #pragma GCC diagnostic pop
+
+  g_atomic_pointer_set (&vp, deadbeef);
+  vp2 = g_atomic_pointer_get (&vp);
+  g_assert (vp2 == deadbeef);
+  res = g_atomic_pointer_compare_and_exchange (&vp, deadbeef, baadf00d);
+  g_assert (res);
+  g_assert (vp == baadf00d);
 
   g_atomic_pointer_set (&ip, 0);
   ip2 = g_atomic_pointer_get (&ip);
@@ -330,6 +339,13 @@ G_GNUC_END_IGNORE_DEPRECATIONS
   res = g_atomic_pointer_compare_and_exchange_full ((char **) &vp_str_vol, (char *) str, NULL, &old_str);
   g_assert_true (res);
   g_assert_true (old_str == str);
+
+  g_atomic_pointer_set (&vp, deadbeef);
+  vp2 = g_atomic_pointer_get (&vp);
+  g_assert (vp2 == deadbeef);
+  res = g_atomic_pointer_compare_and_exchange (&vp, deadbeef, baadf00d);
+  g_assert (res);
+  g_assert (vp == baadf00d);
 
   g_atomic_pointer_set (&ip, 0);
   ip2 = g_atomic_pointer_get (&ip);
