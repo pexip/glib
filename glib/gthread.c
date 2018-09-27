@@ -702,6 +702,12 @@ gboolean
 {
   gsize *value_location = (gsize *) location;
   gboolean need_init = FALSE;
+
+#ifndef __GNUC__
+  if (g_atomic_pointer_get (value_location) != NULL)
+    return FALSE;
+#endif
+
   g_mutex_lock (&g_once_mutex);
   if (g_atomic_pointer_get (value_location) == 0)
     {
