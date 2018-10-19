@@ -989,4 +989,4 @@ if enable_systemtap
 endif
 
 subdir('fam')
-subdir('tests')
+#subdir('tests')
