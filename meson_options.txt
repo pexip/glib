@@ -83,3 +83,23 @@ option('installed_tests',
        type : 'boolean',
        value : false,
        description : 'enable installed tests')
+
+option('asserts',
+       type : 'boolean',
+       value : true,
+       description: 'Enable assertion functions (see G_DISABLE_ASSERT)')
+
+option('checks',
+       type : 'boolean',
+       value : true,
+       description: 'Enable additional checks (see G_DISABLE_CHECKS)')
+
+option('extra_debug',
+       type : 'feature',
+       value : 'auto',
+       description: 'Enable additional debug code (see G_ENABLE_DEBUG) (auto = enabled for debug buildtypes)')
+
+option('cast_checks',
+       type : 'feature',
+       value : 'auto',
+       description: 'Enable cast checks (see G_DISABLE_CAST_CHECKS) (auto = disabled for release buildtype)')

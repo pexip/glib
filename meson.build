@@ -200,9 +200,22 @@ glibconfig_conf.set('glib_os', glib_os)
 buildtype = get_option('buildtype')
 
 glib_debug_cflags = []
-if buildtype.startswith('debug')
+
+if not get_option('asserts')
+  glib_debug_cflags += ['-DG_DISABLE_ASSERT']
+endif
+
+if not get_option('checks')
+  glib_debug_cflags += ['-DG_DISABLE_CHECKS']
+endif
+
+extra_debug = get_option('extra_debug')
+if extra_debug.enabled() or (extra_debug.auto() and buildtype.startswith('debug'))
   glib_debug_cflags += ['-DG_ENABLE_DEBUG']
-elif buildtype == 'release'
+endif
+
+cast_checks = get_option('cast_checks')
+if cast_checks.disabled() or (cast_checks.auto() and buildtype == 'release')
   glib_debug_cflags += ['-DG_DISABLE_CAST_CHECKS']
 endif
 
