@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 
 G_BEGIN_DECLS
 
