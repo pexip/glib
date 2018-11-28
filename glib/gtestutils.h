@@ -362,7 +362,8 @@ void    g_test_init                     (int            *argc,
  * (especially in legacy code). g_assert_*() should really be used instead.
  * g_assert() can be disabled at client program compile time, which can render
  * tests useless. Highlight that to the user. */
-#ifdef G_DISABLE_ASSERT
+//#ifdef G_DISABLE_ASSERT
+#if 0
 #if defined(G_HAVE_ISO_VARARGS)
 #define g_test_init(argc, argv, ...) \
   G_STMT_START { \
