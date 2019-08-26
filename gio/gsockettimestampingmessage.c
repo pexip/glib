@@ -9,7 +9,7 @@
 
 struct _GSocketTimestampingMessagePrivate
 {
-  gchar *dummy;
+  int fields;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GSocketTimestampingMessage, g_socket_timestamping_message, G_TYPE_SOCKET_CONTROL_MESSAGE)
@@ -17,7 +17,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (GSocketTimestampingMessage, g_socket_timestamping_me
 static gsize
 g_socket_timestamping_message_get_size (GSocketControlMessage *message)
 {
-  return sizeof(int);
+  return G_SOCKET_TIMESTAMPING_NATIVE_SIZE;
 }
 
 static int
@@ -29,7 +29,7 @@ g_socket_timestamping_message_get_level (GSocketControlMessage *message)
 static int
 g_socket_timestamping_message_get_msg_type (GSocketControlMessage *message)
 {
-  return SCM_RIGHTS;
+  return SCM_TIMESTAMPING;
 }
 
 static GSocketControlMessage *
@@ -43,10 +43,11 @@ g_socket_timestamping_message_deserialize (int level,
 }
 
 static void
-g_socket_timestamping_message_serialize (GSocketControlMessage *message,
-                 gpointer               data)
+g_socket_timestamping_message_serialize (GSocketControlMessage *message, gpointer data)
 {
-    //todo
+    GSocketTimestampingMessage *message = G_SOCKET_TIMESTAMPING_MESSAGE (_message);
+
+    memcpy(data, &message->priv->fields, G_SOCKET_TIMESTAMPING_NATIVE_SIZE);
 }
 
 static void
@@ -60,8 +61,7 @@ static void
 g_socket_timestamping_message_get_property (GObject *object, guint prop_id,
                                 GValue *value, GParamSpec *pspec)
 {
-  GSocketTimestampingMessage *message = G_SOCKET_TIMESTAMPING_MESSAGE (object);
-
+    GSocketTimestampingMessage *message = G_SOCKET_TIMESTAMPING_MESSAGE (object);
 
 }
 static void

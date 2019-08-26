@@ -16,6 +16,7 @@ G_BEGIN_DECLS
                                                              G_TYPE_SOCKET_TIMESTAMPING_MESSAGE))
 #define G_SOCKET_TIMESTAMPING_MESSAGE_GET_CLASS(inst)                   (G_TYPE_INSTANCE_GET_CLASS ((inst),                      \
                                                              G_TYPE_SOCKET_TIMESTAMPING_MESSAGE, GSocketTimestampingMessageClass))
+#define G_SOCKET_TIMESTAMPING_NATIVE_SIZE (sizeof (int))
 
 typedef struct _GSocketTimestampingMessagePrivate                       GSocketTimestampingMessagePrivate;
 typedef struct _GSocketTimestampingMessageClass                         GSocketTimestampingMessageClass;
