@@ -547,6 +547,7 @@ struct _GOutputMessage {
 typedef struct _GCredentials                  GCredentials;
 typedef struct _GUnixCredentialsMessage       GUnixCredentialsMessage;
 typedef struct _GUnixFDList                   GUnixFDList;
+typedef struct _GUnixTimestampingMessage      GUnixTimestampingMessage;
 typedef struct _GDBusMessage                  GDBusMessage;
 typedef struct _GDBusConnection               GDBusConnection;
 typedef struct _GDBusProxy                    GDBusProxy;
