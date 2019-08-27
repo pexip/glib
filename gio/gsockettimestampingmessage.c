@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -9,7 +11,7 @@
 
 struct _GSocketTimestampingMessagePrivate
 {
-  int fields;
+  int mask;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GSocketTimestampingMessage, g_socket_timestamping_message, G_TYPE_SOCKET_CONTROL_MESSAGE)
@@ -33,43 +35,39 @@ g_socket_timestamping_message_get_msg_type (GSocketControlMessage *message)
 }
 
 static GSocketControlMessage *
-g_socket_timestamping_message_deserialize (int level,
-                   int      type,
-                   gsize    size,
-                   gpointer data)
+g_socket_timestamping_message_deserialize (int level, int type, gsize size, gpointer data)
 {
-  GSocketControlMessage *message;
-  return message;
+    if (level != SOL_SOCKET || type != SCM_TIMESTAMPING){
+        return NULL;
+    }
+    if (size != G_SOCKET_TIMESTAMPING_NATIVE_SIZE || data == NULL){
+        g_warning ("Expected a timestamping struct of %" G_GSIZE_FORMAT " bytes but "
+                   "got %" G_GSIZE_FORMAT " bytes of data",
+                   G_SOCKET_TIMESTAMPING_NATIVE_SIZE, size);
+
+        return NULL;
+    }
+
+    return g_object_new (G_TYPE_SOCKET_TIMESTAMPING_MESSAGE,
+                         "timestamping", data,
+                         NULL);
 }
 
 static void
-g_socket_timestamping_message_serialize (GSocketControlMessage *message, gpointer data)
+g_socket_timestamping_message_serialize (GSocketControlMessage *_message, gpointer data)
 {
     GSocketTimestampingMessage *message = G_SOCKET_TIMESTAMPING_MESSAGE (_message);
 
-    memcpy(data, &message->priv->fields, G_SOCKET_TIMESTAMPING_NATIVE_SIZE);
+    memcpy(data, &message->priv->mask, G_SOCKET_TIMESTAMPING_NATIVE_SIZE);
 }
 
-static void
-g_socket_timestamping_message_set_property (GObject *object, guint prop_id,
-                                const GValue *value, GParamSpec *pspec)
-{
-    return;
-}
-
-static void
-g_socket_timestamping_message_get_property (GObject *object, guint prop_id,
-                                GValue *value, GParamSpec *pspec)
-{
-    GSocketTimestampingMessage *message = G_SOCKET_TIMESTAMPING_MESSAGE (object);
-
-}
 static void
 g_socket_timestamping_message_init (GSocketTimestampingMessage *message)
 {
   message->priv = NULL;
 }
 
+/*
 static void
 g_socket_timestamping_message_finalize (GObject *object)
 {
@@ -78,6 +76,7 @@ g_socket_timestamping_message_finalize (GObject *object)
   G_OBJECT_CLASS (g_socket_timestamping_message_parent_class)
     ->finalize (object);
 }
+*/
 
 static void
 g_socket_timestamping_message_class_init (GSocketTimestampingMessageClass *class)
@@ -90,9 +89,14 @@ g_socket_timestamping_message_class_init (GSocketTimestampingMessageClass *class
   scm_class->get_type = g_socket_timestamping_message_get_msg_type;
   scm_class->serialize = g_socket_timestamping_message_serialize;
   scm_class->deserialize = g_socket_timestamping_message_deserialize;
-  object_class->finalize = g_socket_timestamping_message_finalize;
-  object_class->set_property = g_socket_timestamping_message_set_property;
-  object_class->get_property = g_socket_timestamping_message_get_property;
+  object_class->finalize = NULL;
+  object_class->set_property = NULL;
+  object_class->get_property = NULL;
 
 }
 
+gboolean
+g_socket_timestamping_message_is_supported (void)
+{
+    return TRUE;
+}

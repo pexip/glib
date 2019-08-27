@@ -1,3 +1,23 @@
+/* GIO - GLib Input, Output and Streaming Library - socket timestamping.
+ *
+ * Copyright (C) 2019 Pexip AS
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General
+ * Public License along with this library; if not, see <http://www.gnu.org/licenses/>.
+ *
+ * Authors: Knut Saastad <knut@pexip.com>
+ */
+
 #ifndef __G_SOCKET_TIMESTAMPING_MESSAGE_H__
 #define __G_SOCKET_TIMESTAMPING_MESSAGE_H__
 
@@ -43,6 +63,10 @@ struct _GSocketTimestampingMessage
 
 GLIB_AVAILABLE_IN_ALL
 GType                   g_socket_timestamping_message_get_type                      (void) G_GNUC_CONST;
+
+
+GLIB_AVAILABLE_IN_ALL
+gboolean               g_socket_timestamping_message_is_supported         (void);
 
 G_END_DECLS
 
