@@ -18,33 +18,34 @@
  * Authors: Knut Saastad <knut@pexip.com>
  */
 
-#ifndef __G_SOCKET_TIMESTAMPING_MESSAGE_H__
-#define __G_SOCKET_TIMESTAMPING_MESSAGE_H__
+#ifndef __G_UNIX_TIMESTAMPING_MESSAGE_H__
+#define __G_UNIX_TIMESTAMPING_MESSAGE_H__
 
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
 
-#define G_TYPE_SOCKET_TIMESTAMPING_MESSAGE                              (g_socket_timestamping_message_get_type ())
-#define G_SOCKET_TIMESTAMPING_MESSAGE(inst)                             (G_TYPE_CHECK_INSTANCE_CAST ((inst),                     \
-                                                             G_TYPE_SOCKET_TIMESTAMPING_MESSAGE, GSocketTimestampingMessage))
-#define G_SOCKET_TIMESTAMPING_MESSAGE_CLASS(class)                      (G_TYPE_CHECK_CLASS_CAST ((class),                       \
-                                                             G_TYPE_SOCKET_TIMESTAMPING_MESSAGE, GSocketTimestampingMessageClass))
-#define G_IS_SOCKET_TIMESTAMPING_MESSAGE(inst)                          (G_TYPE_CHECK_INSTANCE_TYPE ((inst),                     \
-                                                             G_TYPE_SOCKET_TIMESTAMPING_MESSAGE))
-#define G_IS_SOCKET_TIMESTAMPING_MESSAGE_CLASS(class)                   (G_TYPE_CHECK_CLASS_TYPE ((class),                       \
-                                                             G_TYPE_SOCKET_TIMESTAMPING_MESSAGE))
-#define G_SOCKET_TIMESTAMPING_MESSAGE_GET_CLASS(inst)                   (G_TYPE_INSTANCE_GET_CLASS ((inst),                      \
-                                                             G_TYPE_SOCKET_TIMESTAMPING_MESSAGE, GSocketTimestampingMessageClass))
-#define G_SOCKET_TIMESTAMPING_NATIVE_SIZE (sizeof (int))
+#define G_TYPE_UNIX_TIMESTAMPING_MESSAGE                              (g_unix_timestamping_message_get_type ())
+#define G_UNIX_TIMESTAMPING_MESSAGE(inst)                             (G_TYPE_CHECK_INSTANCE_CAST ((inst),                     \
+                                                             G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessage))
+#define G_UNIX_TIMESTAMPING_MESSAGE_CLASS(class)                      (G_TYPE_CHECK_CLASS_CAST ((class),                       \
+                                                             G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessageClass))
+#define G_IS_UNIX_TIMESTAMPING_MESSAGE(inst)                          (G_TYPE_CHECK_INSTANCE_TYPE ((inst),                     \
+                                                             G_TYPE_UNIX_TIMESTAMPING_MESSAGE))
+#define G_IS_UNIX_TIMESTAMPING_MESSAGE_CLASS(class)                   (G_TYPE_CHECK_CLASS_TYPE ((class),                       \
+                                                             G_TYPE_UNIX_TIMESTAMPING_MESSAGE))
+#define G_UNIX_TIMESTAMPING_MESSAGE_GET_CLASS(inst)                   (G_TYPE_INSTANCE_GET_CLASS ((inst),                      \
+                                                             G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessageClass))
+#define G_UNIX_TIMESTAMPING_SEND_SIZE (sizeof (int))
+#define G_UNIX_TIMESTAMPING_RECV_SIZE ((gsize)48)
 
-typedef struct _GSocketTimestampingMessagePrivate                       GSocketTimestampingMessagePrivate;
-typedef struct _GSocketTimestampingMessageClass                         GSocketTimestampingMessageClass;
-typedef struct _GSocketTimestampingMessage                              GSocketTimestampingMessage;
+typedef struct _GUnixTimestampingMessagePrivate                       GUnixTimestampingMessagePrivate;
+typedef struct _GUnixTimestampingMessageClass                         GUnixTimestampingMessageClass;
+typedef struct _GUnixTimestampingMessage                              GUnixTimestampingMessage;
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(GSocketTimestampingMessage, g_object_unref)
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(GUnixTimestampingMessage, g_object_unref)
 
-struct _GSocketTimestampingMessageClass
+struct _GUnixTimestampingMessageClass
 {
   GSocketControlMessageClass parent_class;
 
@@ -55,19 +56,19 @@ struct _GSocketTimestampingMessageClass
   void (*_g_reserved2) (void);
 };
 
-struct _GSocketTimestampingMessage
+struct _GUnixTimestampingMessage
 {
   GSocketControlMessage parent_instance;
-  GSocketTimestampingMessagePrivate *priv;
+  GUnixTimestampingMessagePrivate *priv;
 };
 
 GLIB_AVAILABLE_IN_ALL
-GType                   g_socket_timestamping_message_get_type                      (void) G_GNUC_CONST;
+GType                   g_unix_timestamping_message_get_type                      (void) G_GNUC_CONST;
 
 
 GLIB_AVAILABLE_IN_ALL
-gboolean               g_socket_timestamping_message_is_supported         (void);
+gboolean               g_unix_timestamping_message_is_supported         (void);
 
 G_END_DECLS
 
-#endif // __G_SOCKET_TIMESTAMPING_MESSAGE_H__
+#endif // __G_UNIX_TIMESTAMPING_MESSAGE_H__

@@ -51,6 +51,7 @@
 #ifndef G_OS_WIN32
 #include "gunixcredentialsmessage.h"
 #include "gunixfdmessage.h"
+#include "gunixtimestampingmessage.h"
 #endif
 
 
@@ -181,6 +182,7 @@ g_socket_control_message_deserialize (int      level,
 #ifndef G_OS_WIN32
   g_type_ensure (G_TYPE_UNIX_CREDENTIALS_MESSAGE);
   g_type_ensure (G_TYPE_UNIX_FD_MESSAGE);
+  g_type_ensure (G_TYPE_UNIX_TIMESTAMPING_MESSAGE);
 #endif
 
   message_types = g_type_children (G_TYPE_SOCKET_CONTROL_MESSAGE, &n_message_types);
