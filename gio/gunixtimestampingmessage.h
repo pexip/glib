@@ -24,7 +24,6 @@
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
-
 #define G_TYPE_UNIX_TIMESTAMPING_MESSAGE                              (g_unix_timestamping_message_get_type ())
 #define G_UNIX_TIMESTAMPING_MESSAGE(inst)                             (G_TYPE_CHECK_INSTANCE_CAST ((inst),                     \
                                                              G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessage))
@@ -38,37 +37,35 @@ G_BEGIN_DECLS
                                                              G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessageClass))
 #define G_UNIX_TIMESTAMPING_SEND_SIZE (sizeof (int))
 #define G_UNIX_TIMESTAMPING_RECV_SIZE ((gsize)48)
+typedef struct _GUnixTimestampingMessagePrivate
+  GUnixTimestampingMessagePrivate;
+typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
+typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
 
-typedef struct _GUnixTimestampingMessagePrivate                       GUnixTimestampingMessagePrivate;
-typedef struct _GUnixTimestampingMessageClass                         GUnixTimestampingMessageClass;
-typedef struct _GUnixTimestampingMessage                              GUnixTimestampingMessage;
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
+     struct _GUnixTimestampingMessageClass
+     {
+       GSocketControlMessageClass parent_class;
 
-G_DEFINE_AUTOPTR_CLEANUP_FUNC(GUnixTimestampingMessage, g_object_unref)
+       /*< private > */
 
-struct _GUnixTimestampingMessageClass
-{
-  GSocketControlMessageClass parent_class;
+       /* Padding for future expansion */
+       void (*_g_reserved1) (void);
+       void (*_g_reserved2) (void);
+     };
 
-  /*< private >*/
+     struct _GUnixTimestampingMessage
+     {
+       GSocketControlMessage parent_instance;
+       GUnixTimestampingMessagePrivate *priv;
+     };
 
-  /* Padding for future expansion */
-  void (*_g_reserved1) (void);
-  void (*_g_reserved2) (void);
-};
+GLIB_AVAILABLE_IN_ALL GType g_unix_timestamping_message_get_type (void)
+  G_GNUC_CONST;
 
-struct _GUnixTimestampingMessage
-{
-  GSocketControlMessage parent_instance;
-  GUnixTimestampingMessagePrivate *priv;
-};
 
 GLIB_AVAILABLE_IN_ALL
-GType                   g_unix_timestamping_message_get_type                      (void) G_GNUC_CONST;
-
-
-GLIB_AVAILABLE_IN_ALL
-gboolean               g_unix_timestamping_message_is_supported         (void);
+  gboolean g_unix_timestamping_message_is_supported (void);
 
 G_END_DECLS
-
 #endif // __G_UNIX_TIMESTAMPING_MESSAGE_H__
