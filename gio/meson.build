@@ -36,7 +36,7 @@ endif
 
 network_libs = [ ]
 network_args = [ ]
-if host_system != 'windows'
+if host_system not in ['windows', 'emscripten']
   # res_query()
   res_query_test = '''#include <resolv.h>
                       int main (int argc, char ** argv) {
