@@ -153,7 +153,8 @@
  * via the worker thread so that we don't race with waitpid() and
  * accidentally send a signal to an already-reaped child.
  */
-static void initable_iface_init (GInitableIface         *initable_iface);
+static void initable_iface_init (GInitableIface         *initable_iface,
+                                 gpointer                iface_data);
 
 typedef GObjectClass GSubprocessClass;
 
@@ -499,7 +500,8 @@ g_subprocess_init (GSubprocess  *self)
 }
 
 static void
-initable_iface_init (GInitableIface *initable_iface)
+initable_iface_init (GInitableIface *initable_iface,
+                     gpointer        iface_data)
 {
   initable_iface->init = initable_init;
 }

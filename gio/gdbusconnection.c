@@ -510,8 +510,10 @@ static void schedule_method_call (GDBusConnection            *connection,
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-static void initable_iface_init       (GInitableIface      *initable_iface);
-static void async_initable_iface_init (GAsyncInitableIface *async_initable_iface);
+static void initable_iface_init       (GInitableIface      *initable_iface,
+                                       gpointer             iface_data);
+static void async_initable_iface_init (GAsyncInitableIface *async_initable_iface,
+                                       gpointer             iface_data);
 
 G_DEFINE_TYPE_WITH_CODE (GDBusConnection, g_dbus_connection, G_TYPE_OBJECT,
                          G_IMPLEMENT_INTERFACE (G_TYPE_INITABLE, initable_iface_init)
@@ -2661,7 +2663,8 @@ initable_init (GInitable     *initable,
 }
 
 static void
-initable_iface_init (GInitableIface *initable_iface)
+initable_iface_init (GInitableIface *initable_iface,
+                     gpointer        iface_data)
 {
   initable_iface->init = initable_init;
 }
@@ -2669,7 +2672,8 @@ initable_iface_init (GInitableIface *initable_iface)
 /* ---------------------------------------------------------------------------------------------------- */
 
 static void
-async_initable_iface_init (GAsyncInitableIface *async_initable_iface)
+async_initable_iface_init (GAsyncInitableIface *async_initable_iface,
+                           gpointer             iface_data)
 {
   /* Use default */
 }
