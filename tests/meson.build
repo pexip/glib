@@ -20,12 +20,10 @@ tests = {
   'testgdate' : {},
   'datetime' : {},
   'bit-test' : {},
-  'child-test' : {},
   'completion-test' : {},
   'dirname-test' : {},
   'file-test' : {},
   'env-test' : {},
-  'gio-test' : {},
   'mainloop-test' : {},
   'mapping-test' : {},
   'onceinit' : {},
@@ -81,6 +79,13 @@ if host_machine.system() != 'windows'
 else
   test_extra_programs += {
     'spawn-test-win32-gui' : {'gui_app' : true}
+  }
+endif
+
+if host_machine.system() != 'ios'
+  tests += {
+    'child-test' : {},
+    'gio-test' : {},
   }
 endif
 
