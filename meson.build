@@ -1917,7 +1917,7 @@ if host_system == 'windows'
   export_dynamic_ldflags = []
 elif host_system == 'cygwin'
   export_dynamic_ldflags = ['-Wl,--export-all-symbols']
-elif host_system == 'darwin'
+elif host_system == 'darwin' or host_system == 'ios'
   export_dynamic_ldflags = []
 else
   export_dynamic_ldflags = ['-Wl,--export-dynamic']

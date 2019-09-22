@@ -21,12 +21,10 @@ tests = {
   'datetime' : {},
   'atomic-test' : {},
   'bit-test' : {},
-  'child-test' : {},
   'completion-test' : {},
   'dirname-test' : {},
   'file-test' : {},
   'env-test' : {},
-  'gio-test' : {},
   'mainloop-test' : {},
   'mapping-test' : {},
   'onceinit' : {},
@@ -70,6 +68,13 @@ if host_machine.system() != 'windows'
     'timeloop' : {},
     'spawn-test' : {},
     'iochannel-test' : {},
+  }
+endif
+
+if host_machine.system() != 'ios'
+  tests += {
+    'child-test' : {},
+    'gio-test' : {},
   }
 endif
 
