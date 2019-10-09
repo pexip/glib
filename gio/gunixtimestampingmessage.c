@@ -13,12 +13,16 @@
 enum TIMESTAMPINGTYPE {
     TIMESTAMP_SYSTEM,
     TIMESTAMP_TRANSFORMED,
-    TIMESTAMP_RAW
+    TIMESTAMP_RAW,
+    __TIMESTAMPINGTYPE_MAX
 };
+
+char * TIMESTAMPINGTYPE_NAME[__TIMESTAMPINGTYPE_MAX] = {"SYSTEM","TRANSFORMED","RAW"};
 
 enum PROPERTIES {
     PROP_0 = 0,
     PROP_TYPE,
+    PROP_TYPE_NAME,
     PROP_SECONDS,
     PROP_NANOSECONDS
 };
@@ -119,6 +123,10 @@ g_unix_timestamping_message_get_property (GObject    *object,
     case PROP_TYPE:
         g_value_set_int (value, message->priv->timestampingtype);
         break;
+    case PROP_TYPE_NAME:
+        printf("** TUNK ** Get PROP_TYPE_NAME %s", TIMESTAMPINGTYPE_NAME[message->priv->timestampingtype]);
+        g_value_set_string(value,TIMESTAMPINGTYPE_NAME[message->priv->timestampingtype]);
+        break;
     case PROP_SECONDS:
         g_value_set_int64 (value, message->priv->timestampingsec);
         break;
@@ -147,6 +155,8 @@ g_unix_timestamping_message_set_property (GObject      *object,
     {
     case PROP_TYPE:
       message->priv->timestampingtype = g_value_get_int(value);
+      break;
+    case PROP_TYPE_NAME:
       break;
     case PROP_SECONDS:
       message->priv->timestampingsec = g_value_get_int64(value);
@@ -207,6 +217,14 @@ g_unix_timestamping_message_class_init (GUnixTimestampingMessageClass * class)
                             G_PARAM_STATIC_STRINGS |
                             G_PARAM_READWRITE |
                             G_PARAM_CONSTRUCT_ONLY));
+  g_object_class_install_property (object_class, PROP_TYPE_NAME,
+                   g_param_spec_string ("timestampingtypename",
+                            "Timestamp_type_name",
+                            "Timestamping typename for outgoing packet.",
+                            "Unknown_type_name",
+                            G_PARAM_STATIC_STRINGS |
+                            G_PARAM_READWRITE |
+                            G_PARAM_CONSTRUCT_ONLY));
   g_object_class_install_property (object_class, PROP_SECONDS,
                    g_param_spec_int64 ("timestampingsecs",
 							"Timestamp_secs",
@@ -235,4 +253,10 @@ g_unix_timestamping_message_is_supported (void)
 {
   printf ("** TUNK ** g_unix_timestamping_message_is_supported\n");
   return TRUE;
+}
+
+GSocketControlMessage *
+g_unix_timestamping_message_new (void)
+{
+  return g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE, NULL);
 }

@@ -60,12 +60,11 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
        GUnixTimestampingMessagePrivate *priv;
      };
 
-GLIB_AVAILABLE_IN_ALL GType g_unix_timestamping_message_get_type (void)
-  G_GNUC_CONST;
+GLIB_AVAILABLE_IN_ALL GType g_unix_timestamping_message_get_type (void) G_GNUC_CONST;
 
+GLIB_AVAILABLE_IN_ALL gboolean g_unix_timestamping_message_is_supported (void);
 
-GLIB_AVAILABLE_IN_ALL
-  gboolean g_unix_timestamping_message_is_supported (void);
+GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new (void);
 
 G_END_DECLS
 #endif // __G_UNIX_TIMESTAMPING_MESSAGE_H__
