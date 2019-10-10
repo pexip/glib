@@ -41,6 +41,7 @@ G_BEGIN_DECLS
 typedef struct _GUnixTimestampingMessagePrivate GUnixTimestampingMessagePrivate;
 typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
 typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
+typedef struct _GUnixTimestampingDeserializationData GUnixTimestampingDeserializationData;
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
      struct _GUnixTimestampingMessageClass
