@@ -37,8 +37,8 @@ G_BEGIN_DECLS
                                                              G_TYPE_UNIX_TIMESTAMPING_MESSAGE, GUnixTimestampingMessageClass))
 #define G_UNIX_TIMESTAMPING_SEND_SIZE (sizeof (int))
 #define G_UNIX_TIMESTAMPING_RECV_SIZE ((gsize)48)
-typedef struct _GUnixTimestampingMessagePrivate
-  GUnixTimestampingMessagePrivate;
+
+typedef struct _GUnixTimestampingMessagePrivate GUnixTimestampingMessagePrivate;
 typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
 typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
 
