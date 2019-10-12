@@ -11,43 +11,43 @@
 #include "gnetworking.h"
 #include "gioerror.h"
 
-enum TIMESTAMPINGTYPE {
-    TIMESTAMPINGTYPE_SYSTEM,
-    TIMESTAMPINGTYPE_TRANSFORMED,
-    TIMESTAMPINGTYPE_RAW,
-    __TIMESTAMPINGTYPE_MAX__
-};
-
-char * TIMESTAMPINGTYPE_NAME[__TIMESTAMPINGTYPE_MAX__] = {"SYSTEM","TRANSFORMED","RAW"};
-
 enum PROPERTIES {
     PROP_0 = 0,
-    PROP_TYPE,
-    PROP_TYPE_NAME,
+    PROP_MESSAGE_TYPE,
+    PROP_PACKET_ID,
+    PROP_TIMESTAMPING_TYPE,
     PROP_SECONDS,
     PROP_NANOSECONDS,
-    PROP_PACKET_ID
 };
+
+enum MESSAGE_TYPE {
+  MESSAGE_TYPE_UNSET,
+  MESSAGE_TYPE_PACKET_ID,
+  MESSAGE_TYPE_TIMESTAMPING_INFO,
+  __MESSAGE_TYPE_MAX__
+};
+
+char * MESSAGE_TYPE_TO_STRING[__MESSAGE_TYPE_MAX__] = {"UNSET", "PACKET_ID", "TIMESTAMPING_INFO"};
+
+enum TIMESTAMPING_TYPE {
+    TIMESTAMPING_TYPE_SYSTEM,
+    TIMESTAMPING_TYPE_TRANSFORMED,
+    TIMESTAMPING_TYPE_RAW,
+    __TIMESTAMPING_TYPE_MAX__
+};
+char * TIMESTAMPING_TYPE_TO_STRING[__TIMESTAMPING_TYPE_MAX__] = {"SYSTEM","TRANSFORMED","RAW"};
 
 struct _GUnixTimestampingMessagePrivate
 {
   gint mask;
-  gint timestamping_type;
+
+  guint message_type;
+  guint timestamping_type;
+  guint packet_id;
   glong timestamping_sec;
   glong timestamping_nsec;
-  guint packet_id;
 };
 
-struct _GUnixTimestampingDeserializationData
-{
-  gboolean packet_id_is_set;
-  gboolean timestamping_is_set;
-
-  gint timestamping_type;
-  glong timestamping_sec;
-  glong timestamping_nsec;
-  guint packet_id;
-};
 
 G_DEFINE_TYPE_WITH_PRIVATE (GUnixTimestampingMessage, g_unix_timestamping_message, G_TYPE_SOCKET_CONTROL_MESSAGE)
 
@@ -71,27 +71,21 @@ g_unix_timestamping_message_get_msg_type (GSocketControlMessage * message)
   return SCM_TIMESTAMPING;
 }
 
-static GPrivate timestampingDeserializationData = G_PRIVATE_INIT (g_free);
-
 static GSocketControlMessage *
 g_unix_timestamping_message_deserialize (int level, int type, gsize size, gpointer data)
 {
-  GUnixTimestampingDeserializationData * deserializationData = g_private_get(&timestampingDeserializationData);
-  if (deserializationData == NULL){
-    deserializationData = g_new0(GUnixTimestampingDeserializationData, 1);
-    g_private_set(&timestampingDeserializationData, deserializationData);
-  }
-
-
   printf ("** TUNK ** enter %s\n", __FUNCTION__);
 
   if ((level == SOL_IP || level == SOL_IPV6) && type == IP_RECVERR)
   {
     struct sock_extended_err * errqueue = (struct sock_extended_err *)data;
     if (errqueue->ee_errno == ENOMSG && errqueue->ee_origin == SO_EE_ORIGIN_TIMESTAMPING) {
-      deserializationData->packet_id = errqueue->ee_data;
-      deserializationData->packet_id_is_set = TRUE;      
-      printf("** TUNK ** GOT IP_RECVERR! PacketID:%u\n", deserializationData->packet_id);
+      GSocketControlMessage * data = g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE,
+                 "message-type", MESSAGE_TYPE_PACKET_ID,
+                 "packet-id", errqueue->ee_data,
+                 NULL);
+      printf("** TUNK ** GOT IP_RECVERR! PacketID:%u\n", errqueue->ee_data);
+      return data;
     }
   }
 
@@ -103,35 +97,30 @@ g_unix_timestamping_message_deserialize (int level, int type, gsize size, gpoint
     {
       g_warning ("Expected a timestamping struct of %" G_GSIZE_FORMAT " bytes but " "got %" G_GSIZE_FORMAT " bytes of data", G_UNIX_TIMESTAMPING_RECV_SIZE, size);
       return NULL;
-    }
-
-    if (udp_tx_stamp[TIMESTAMPINGTYPE_RAW].tv_sec != 0 || udp_tx_stamp[TIMESTAMPINGTYPE_RAW].tv_nsec != 0 ) {
-      deserializationData->timestamping_type = TIMESTAMPINGTYPE_RAW;
-    } else if (udp_tx_stamp[TIMESTAMPINGTYPE_SYSTEM].tv_sec != 0 || udp_tx_stamp[TIMESTAMPINGTYPE_SYSTEM].tv_nsec != 0 ){
-      deserializationData->timestamping_type = TIMESTAMPINGTYPE_SYSTEM;
-    } else if (udp_tx_stamp[TIMESTAMPINGTYPE_TRANSFORMED].tv_sec != 0 || udp_tx_stamp[TIMESTAMPINGTYPE_TRANSFORMED].tv_nsec != 0 ) {
-      deserializationData->timestamping_type = TIMESTAMPINGTYPE_TRANSFORMED;
     } else {
-      g_warning ("Received timestamping information with empty timestamping info, ignoring.");
-      return NULL;
-    }
-    deserializationData->timestamping_sec = udp_tx_stamp[deserializationData->timestamping_type].tv_sec;
-    deserializationData->timestamping_nsec = udp_tx_stamp[deserializationData->timestamping_type].tv_nsec;
-    deserializationData->timestamping_is_set = TRUE;
-      printf("** TUNK ** GOT SCM_TIMESTAMPING! Timer:%s timestamp:%ld.%09ld\n", TIMESTAMPINGTYPE_NAME[deserializationData->timestamping_type], deserializationData->timestamping_sec, deserializationData->timestamping_nsec);
-  }
+      guint timestamping_type = __TIMESTAMPING_TYPE_MAX__;
+      if (udp_tx_stamp[TIMESTAMPING_TYPE_RAW].tv_sec != 0 || udp_tx_stamp[TIMESTAMPING_TYPE_RAW].tv_nsec != 0 ) {
+        timestamping_type = TIMESTAMPING_TYPE_RAW;
+      } else if (udp_tx_stamp[TIMESTAMPING_TYPE_SYSTEM].tv_sec != 0 || udp_tx_stamp[TIMESTAMPING_TYPE_SYSTEM].tv_nsec != 0 ){
+        timestamping_type = TIMESTAMPING_TYPE_SYSTEM;
+      } else if (udp_tx_stamp[TIMESTAMPING_TYPE_TRANSFORMED].tv_sec != 0 || udp_tx_stamp[TIMESTAMPING_TYPE_TRANSFORMED].tv_nsec != 0 ) {
+        timestamping_type = TIMESTAMPING_TYPE_TRANSFORMED;
+      } else {
+        g_warning ("Received timestamping information with empty timestamping info, ignoring.");
+        return NULL;
+      }
 
-  if (deserializationData->packet_id_is_set && deserializationData->timestamping_is_set) {
-    GSocketControlMessage * data = g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE,
-               "timestampingtype", deserializationData->timestamping_type,
-               "timestampingtypename", TIMESTAMPINGTYPE_NAME[deserializationData->timestamping_type],
-               "timestampingsecs", deserializationData->timestamping_sec,
-               "timestampingnsecs", deserializationData->timestamping_nsec,
-               "packetid", deserializationData->packet_id,
-               NULL);
-    g_private_replace(&timestampingDeserializationData, NULL);
-    printf("** TUNK ** RETURNING assembled GSocketControlMessage!\n");
-    return data;
+      if (timestamping_type != __TIMESTAMPING_TYPE_MAX__){
+        GSocketControlMessage * data = g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE,
+                   "message-type", MESSAGE_TYPE_TIMESTAMPING_INFO,
+                   "timestamping-type", timestamping_type,
+                   "timestamping-secs", udp_tx_stamp[timestamping_type].tv_sec,
+                   "timestamping-nsecs", udp_tx_stamp[timestamping_type].tv_nsec,
+                   NULL);
+        printf("** TUNK ** GOT SCM_TIMESTAMPING! Timer:%s timestamp:%ld.%09ld\n", TIMESTAMPING_TYPE_TO_STRING[timestamping_type], udp_tx_stamp[timestamping_type].tv_sec, udp_tx_stamp[timestamping_type].tv_nsec);
+        return data;        
+      }
+    }
   }
   return NULL;
 }
@@ -155,20 +144,20 @@ g_unix_timestamping_message_get_property (GObject    *object,
 
   switch (prop_id)
   {
-    case PROP_TYPE:
-        g_value_set_int (value, message->priv->timestamping_type);
+    case PROP_MESSAGE_TYPE:
+        g_value_set_uint (value, message->priv->message_type);
         break;
-    case PROP_TYPE_NAME:
-        g_value_set_string(value,TIMESTAMPINGTYPE_NAME[message->priv->timestamping_type]);
+    case PROP_PACKET_ID:
+        g_value_set_uint (value, message->priv->packet_id);
         break;
+    case PROP_TIMESTAMPING_TYPE:
+        g_value_set_uint (value, message->priv->timestamping_type);
+        break;        
     case PROP_SECONDS:
         g_value_set_int64 (value, message->priv->timestamping_sec);
         break;
     case PROP_NANOSECONDS:
         g_value_set_int64 (value, message->priv->timestamping_nsec);
-        break;
-    case PROP_PACKET_ID:
-        g_value_set_uint (value, message->priv->packet_id);
         break;
     default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -186,21 +175,27 @@ g_unix_timestamping_message_set_property (GObject      *object,
 {
   GUnixTimestampingMessage *message = G_UNIX_TIMESTAMPING_MESSAGE (object);
 
+/*
   GObjectClass *object_class = G_OBJECT_GET_CLASS(object);
   GUnixTimestampingMessageClass *scm_class = G_UNIX_TIMESTAMPING_MESSAGE_CLASS (object_class);
 
   printf ("** TUNK ** enter %s, object:%p prop_id:%d\n", __FUNCTION__, object, prop_id);
   printf("CLASS: %s TYPE: %ld Expected: %d\n", G_OBJECT_CLASS_NAME(object_class), G_OBJECT_CLASS_TYPE(object_class), G_IS_UNIX_TIMESTAMPING_MESSAGE_CLASS(object_class));
   printf("VAL: %lu\n", scm_class->tunkptr++);
-
+*/
   switch (prop_id)
     {
-    case PROP_TYPE:
-      message->priv->timestamping_type = g_value_get_int(value);
-      printf ("** TUNK ** prop_id:%d:PROP_TYPE Value:%d\n", prop_id, message->priv->timestamping_type);
+    case PROP_MESSAGE_TYPE:
+      message->priv->message_type = g_value_get_uint(value);
+      printf ("** TUNK ** prop_id:%d:PROP_MESSAGE_TYPE Value:%d\n", prop_id, message->priv->message_type);
       break;
-    case PROP_TYPE_NAME:
-      printf ("** TUNK ** prop_id:%d:PROP_TYPE_NAME Value:%s\n", prop_id, TIMESTAMPINGTYPE_NAME[message->priv->timestamping_type]);
+    case PROP_PACKET_ID:
+      message->priv->packet_id = g_value_get_uint(value);
+      printf ("** TUNK ** prop_id:%d:PROP_PACKET_ID Value:%u\n", prop_id, message->priv->packet_id);
+      break;
+    case PROP_TIMESTAMPING_TYPE:
+      message->priv->timestamping_type = g_value_get_uint(value);
+      printf ("** TUNK ** prop_id:%d:PROP_TIMESTAMPING_TYPE Value:%ld\n", prop_id, message->priv->timestamping_sec);
       break;
     case PROP_SECONDS:
       message->priv->timestamping_sec = g_value_get_int64(value);
@@ -209,10 +204,6 @@ g_unix_timestamping_message_set_property (GObject      *object,
     case PROP_NANOSECONDS:
       message->priv->timestamping_nsec = g_value_get_int64(value);
       printf ("** TUNK ** prop_id:%d:PROP_NANOSECONDS Value:%ld\n", prop_id, message->priv->timestamping_nsec);
-      break;
-    case PROP_PACKET_ID:
-      message->priv->packet_id = g_value_get_uint(value);
-      printf ("** TUNK ** prop_id:%d:PROP_PACKET_ID Value:%u\n", prop_id, message->priv->packet_id);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -259,26 +250,38 @@ g_unix_timestamping_message_class_init (GUnixTimestampingMessageClass * class)
   object_class->set_property = g_unix_timestamping_message_set_property;
   object_class->get_property = g_unix_timestamping_message_get_property;
 
-  g_object_class_install_property (object_class, PROP_TYPE,
-                   g_param_spec_int ("timestampingtype",
-							"Timestamp_type",
-							"Timestamping type for outgoing packet.",
-                            TIMESTAMPINGTYPE_SYSTEM,
-                            TIMESTAMPINGTYPE_RAW,
-                            TIMESTAMPINGTYPE_SYSTEM,
+  g_object_class_install_property (object_class, PROP_MESSAGE_TYPE,
+                   g_param_spec_uint ("message-type",
+							"Message_type",
+							"Message_type for outgoing package timestamping info.",
+                            MESSAGE_TYPE_UNSET,
+                            MESSAGE_TYPE_TIMESTAMPING_INFO,
+                            MESSAGE_TYPE_UNSET,
                             G_PARAM_STATIC_STRINGS |
                             G_PARAM_READWRITE |
                             G_PARAM_CONSTRUCT_ONLY));
-  g_object_class_install_property (object_class, PROP_TYPE_NAME,
-                   g_param_spec_string ("timestampingtypename",
-                            "Timestamp_type_name",
-                            "Timestamping typename for outgoing packet.",
-                            "Unknown_type_name",
+  g_object_class_install_property (object_class, PROP_PACKET_ID,
+                   g_param_spec_uint ("packet-id",
+                            "Packet_id",
+              "Packet id of responding sent packet (counter per socket).",
+                            0,
+                            G_MAXUINT32,
+                            0,
+                            G_PARAM_STATIC_STRINGS |
+                            G_PARAM_READWRITE |
+                            G_PARAM_CONSTRUCT_ONLY));
+  g_object_class_install_property (object_class, PROP_TIMESTAMPING_TYPE,
+                   g_param_spec_uint ("timestamping-type",
+              "Timestamping_type",
+              "Timestamping_type for outgoing package timestamping info.",
+                            TIMESTAMPING_TYPE_SYSTEM,
+                            TIMESTAMPING_TYPE_RAW,
+                            TIMESTAMPING_TYPE_SYSTEM,
                             G_PARAM_STATIC_STRINGS |
                             G_PARAM_READWRITE |
                             G_PARAM_CONSTRUCT_ONLY));
   g_object_class_install_property (object_class, PROP_SECONDS,
-                   g_param_spec_int64 ("timestampingsecs",
+                   g_param_spec_int64 ("timestamping-secs",
 							"Timestamp_secs",
 							"Timestamping seconds of outgoing packet.",
                             0,
@@ -288,21 +291,11 @@ g_unix_timestamping_message_class_init (GUnixTimestampingMessageClass * class)
                             G_PARAM_READWRITE |
                             G_PARAM_CONSTRUCT_ONLY));
   g_object_class_install_property (object_class, PROP_NANOSECONDS,
-                   g_param_spec_int64 ("timestampingnsecs",
+                   g_param_spec_int64 ("timestamping-nsecs",
                             "Timestamp_nsecs",
 							"Timestamping nanoseconds of outgoing packet.",
                             0,
                             G_MAXINT64,
-                            0,
-                            G_PARAM_STATIC_STRINGS |
-                            G_PARAM_READWRITE |
-                            G_PARAM_CONSTRUCT_ONLY));
-  g_object_class_install_property (object_class, PROP_PACKET_ID,
-                   g_param_spec_uint ("packetid",
-                            "Packet_id",
-              "Packet id of responding sent packet (counter per socket).",
-                            0,
-                            G_MAXUINT32,
                             0,
                             G_PARAM_STATIC_STRINGS |
                             G_PARAM_READWRITE |
@@ -316,6 +309,25 @@ g_unix_timestamping_message_is_supported (void)
   printf ("** TUNK ** enter %s\n", __FUNCTION__);
   return TRUE;
 }
+
+const gchar *
+g_unix_timestamping_get_message_type_name (guint message_type)
+{
+  return (message_type < __MESSAGE_TYPE_MAX__) ? MESSAGE_TYPE_TO_STRING[message_type] : NULL;
+}
+
+const gchar *
+g_unix_timestamping_get_timestamping_type_name (guint timestamping_type)
+{
+  return (timestamping_type < __TIMESTAMPING_TYPE_MAX__) ? TIMESTAMPING_TYPE_TO_STRING[timestamping_type] : NULL;
+}
+
+/*
+void 
+g_unix_timestamping_parse_controlmessage_set(GSocketControlMessage ** controlmessages[2]){
+
+}
+*/
 
 GSocketControlMessage *
 g_unix_timestamping_message_new (void)
