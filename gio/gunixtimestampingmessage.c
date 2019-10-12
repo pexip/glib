@@ -185,23 +185,34 @@ g_unix_timestamping_message_set_property (GObject      *object,
                                          GParamSpec   *pspec)
 {
   GUnixTimestampingMessage *message = G_UNIX_TIMESTAMPING_MESSAGE (object);
+
+  GObjectClass *object_class = G_OBJECT_GET_CLASS(object);
+  GUnixTimestampingMessageClass *scm_class = G_UNIX_TIMESTAMPING_MESSAGE_CLASS (object_class);
+
   printf ("** TUNK ** enter %s, object:%p prop_id:%d\n", __FUNCTION__, object, prop_id);
+  printf("CLASS: %s TYPE: %ld Expected: %d\n", G_OBJECT_CLASS_NAME(object_class), G_OBJECT_CLASS_TYPE(object_class), G_IS_UNIX_TIMESTAMPING_MESSAGE_CLASS(object_class));
+  printf("VAL: %lu\n", scm_class->tunkptr++);
 
   switch (prop_id)
     {
     case PROP_TYPE:
       message->priv->timestamping_type = g_value_get_int(value);
+      printf ("** TUNK ** prop_id:%d:PROP_TYPE Value:%d\n", prop_id, message->priv->timestamping_type);
       break;
     case PROP_TYPE_NAME:
+      printf ("** TUNK ** prop_id:%d:PROP_TYPE_NAME Value:%s\n", prop_id, TIMESTAMPINGTYPE_NAME[message->priv->timestamping_type]);
       break;
     case PROP_SECONDS:
       message->priv->timestamping_sec = g_value_get_int64(value);
+      printf ("** TUNK ** prop_id:%d:PROP_SECONDS Value:%ld\n", prop_id, message->priv->timestamping_sec);
       break;
     case PROP_NANOSECONDS:
       message->priv->timestamping_nsec = g_value_get_int64(value);
+      printf ("** TUNK ** prop_id:%d:PROP_NANOSECONDS Value:%ld\n", prop_id, message->priv->timestamping_nsec);
       break;
     case PROP_PACKET_ID:
       message->priv->packet_id = g_value_get_uint(value);
+      printf ("** TUNK ** prop_id:%d:PROP_PACKET_ID Value:%u\n", prop_id, message->priv->packet_id);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -215,6 +226,7 @@ g_unix_timestamping_message_init (GUnixTimestampingMessage * message)
 {
   printf ("** TUNK ** enter %s\n", __FUNCTION__);
   message->priv = g_unix_timestamping_message_get_instance_private(message);
+  printf ("** TUNK ** leave %s\n", __FUNCTION__);
 }
 
 /*
@@ -235,6 +247,9 @@ g_unix_timestamping_message_class_init (GUnixTimestampingMessageClass * class)
   GObjectClass *object_class = G_OBJECT_CLASS (class);
 
   printf ("** TUNK ** enter %s\n", __FUNCTION__);
+
+  class->tunkptr = 123;
+
   scm_class->get_size = g_unix_timestamping_message_get_size;
   scm_class->get_level = g_unix_timestamping_message_get_level;
   scm_class->get_type = g_unix_timestamping_message_get_msg_type;
@@ -305,6 +320,11 @@ g_unix_timestamping_message_is_supported (void)
 GSocketControlMessage *
 g_unix_timestamping_message_new (void)
 {
+  GUnixTimestampingMessage * msg = NULL;
   printf ("** TUNK ** enter %s\n", __FUNCTION__);
-  return g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE, NULL);
+  msg =  g_object_new (G_TYPE_UNIX_TIMESTAMPING_MESSAGE, NULL);
+  printf ("** TUNK ** leave %s\n", __FUNCTION__);
+  return msg;
 }
+
+//void * g_unix_timestamping_

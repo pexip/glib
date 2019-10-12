@@ -49,6 +49,7 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
        GSocketControlMessageClass parent_class;
 
        /*< private > */
+       guint64 tunkptr;
 
        /* Padding for future expansion */
        void (*_g_reserved1) (void);
