@@ -6,6 +6,10 @@
 #include <errno.h>
 #include <linux/net_tstamp.h>
 #include <linux/errqueue.h>
+#include <linux/net_tstamp.h>
+#include <linux/sockios.h>
+#include <sys/ioctl.h>
+
 
 #include "gunixtimestampingmessage.h"
 #include "gnetworking.h"
@@ -48,6 +52,13 @@ struct _GUnixTimestampingMessagePrivate
   glong timestamping_nsec;
 };
 
+struct _GUnixTimestampingMessageParsed
+{
+  guint packet_id;
+  guint timestamping_type;
+  glong timestamping_sec;
+  glong timestamping_nsec;  
+};
 
 G_DEFINE_TYPE_WITH_PRIVATE (GUnixTimestampingMessage, g_unix_timestamping_message, G_TYPE_SOCKET_CONTROL_MESSAGE)
 
@@ -322,12 +333,93 @@ g_unix_timestamping_get_timestamping_type_name (guint timestamping_type)
   return (timestamping_type < __TIMESTAMPING_TYPE_MAX__) ? TIMESTAMPING_TYPE_TO_STRING[timestamping_type] : NULL;
 }
 
-/*
-void 
-g_unix_timestamping_parse_controlmessage_set(GSocketControlMessage ** controlmessages[2]){
+gint
+g_unix_timestamping_enable_raw(const gchar * ifname)
+{
+  int sd;
+  struct ifreq ifr = {0};
+  struct hwtstamp_config hwc = {0};
 
+  if (ifname == NULL ){
+    errno = EINVAL;
+    return -1;
+  }
+
+  sd = socket(AF_LOCAL, SOCK_STREAM, 0);
+  if (sd == -1){
+    return -1;
+  }
+
+  ifr.ifr_data = (char*)&hwc;
+  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+  if ((ioctl(sd, SIOCGHWTSTAMP, &ifr)) == -1){
+    close(sd);
+    return -1;
+  }
+
+  if (hwc.tx_type != HWTSTAMP_TX_ON){
+    hwc.tx_type = HWTSTAMP_TX_ON;
+    if ((ioctl(sd, SIOCSHWTSTAMP, &ifr)) == -1){
+      close(sd);
+      return -1;
+    }
+  }
+
+  close(sd);
+  return 0;
 }
-*/
+
+
+GUnixTimestampingMessageParsed * 
+g_unix_timestamping_parse_controlmessage_set(GSocketControlMessage ** control_messages[2], guint num_control_messages)
+{
+  GUnixTimestampingMessageParsed * data = NULL;
+
+  if (num_control_messages == 2){
+    GValue val_packet_id = G_VALUE_INIT;
+    GValue val_timestamping_type = G_VALUE_INIT;
+    GValue val_secs = G_VALUE_INIT;
+    GValue val_nsecs = G_VALUE_INIT;
+
+    for (guint i=0; i < num_control_messages; i++){
+      gint level = g_socket_control_message_get_level(*control_messages[i]);
+      gint type = g_socket_control_message_get_msg_type(*control_messages[i]);
+
+      if (level == SOL_SOCKET && type == SCM_TIMESTAMPING && G_IS_UNIX_TIMESTAMPING_MESSAGE(control_messages[i])){
+        GValue val_message_type = G_VALUE_INIT;
+        g_value_init(&val_message_type, G_TYPE_UINT);
+        g_object_get_property(G_OBJECT(control_messages[i]), "message-type", &val_message_type);
+        if (g_value_get_int(&val_message_type) == MESSAGE_TYPE_PACKET_ID){
+          g_value_init(&val_packet_id, G_TYPE_UINT);
+          g_object_get_property(G_OBJECT(control_messages[i]), "packet-id", &val_packet_id);
+        } else if (g_value_get_int(&val_message_type) == MESSAGE_TYPE_TIMESTAMPING_INFO)  {
+          g_value_init(&val_timestamping_type, G_TYPE_UINT);
+          g_value_init(&val_secs, G_TYPE_INT64);
+          g_value_init(&val_nsecs, G_TYPE_INT64);
+          g_object_get_property(G_OBJECT(control_messages[i]), "timestamping-type", &val_timestamping_type);
+          g_object_get_property(G_OBJECT(control_messages[i]), "timestamping-secs", &val_secs);
+          g_object_get_property(G_OBJECT(control_messages[i]), "timestamping-nsecs", &val_nsecs);
+        }
+        g_value_unset(&val_message_type);
+      }
+    }
+
+    if (G_VALUE_HOLDS(&val_packet_id, G_TYPE_UINT) && G_VALUE_HOLDS(&val_timestamping_type, G_TYPE_UINT) && G_VALUE_HOLDS(&val_secs, G_TYPE_INT64) && G_VALUE_HOLDS(&val_nsecs, G_TYPE_INT64)) {
+      data = g_new(GUnixTimestampingMessageParsed, 1);
+      data->packet_id = g_value_get_uint(&val_packet_id);
+      data->timestamping_type = g_value_get_uint(&val_timestamping_type);
+      data->timestamping_sec = g_value_get_int64(&val_secs);
+      data->timestamping_nsec = g_value_get_int64(&val_nsecs);
+    }    
+
+    g_value_unset(&val_timestamping_type);
+    g_value_unset(&val_packet_id);
+    g_value_unset(&val_secs);
+    g_value_unset(&val_nsecs);
+  }
+
+  return data;
+}
 
 GSocketControlMessage *
 g_unix_timestamping_message_new (void)

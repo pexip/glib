@@ -41,7 +41,7 @@ G_BEGIN_DECLS
 typedef struct _GUnixTimestampingMessagePrivate GUnixTimestampingMessagePrivate;
 typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
 typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
-typedef struct _GUnixTimestampingDeserializationData GUnixTimestampingDeserializationData;
+typedef struct _GUnixTimestampingMessageParsed GUnixTimestampingMessageParsed;
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
      struct _GUnixTimestampingMessageClass
@@ -69,6 +69,10 @@ GLIB_AVAILABLE_IN_ALL gboolean g_unix_timestamping_message_is_supported (void);
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_message_type_name (guint);
 
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_timestamping_type_name (guint);
+
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_raw(const gchar *);
+
+GLIB_AVAILABLE_IN_ALL GUnixTimestampingMessageParsed * g_unix_timestamping_parse_controlmessage_set(GSocketControlMessage **[2], guint);
 
 GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new (void);
 
