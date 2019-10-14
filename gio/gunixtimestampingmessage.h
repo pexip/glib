@@ -38,10 +38,19 @@ G_BEGIN_DECLS
 #define G_UNIX_TIMESTAMPING_SEND_SIZE (sizeof (int))
 #define G_UNIX_TIMESTAMPING_RECV_SIZE ((gsize)48)
 
+struct _GUnixTimestampingMessageUnified
+{
+  guint packet_id;
+  guint timestamping_type;
+  glong timestamping_sec;
+  glong timestamping_nsec;  
+};
+
 typedef struct _GUnixTimestampingMessagePrivate GUnixTimestampingMessagePrivate;
 typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
 typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
-typedef struct _GUnixTimestampingMessageParsed GUnixTimestampingMessageParsed;
+typedef struct _GUnixTimestampingMessageUnified GUnixTimestampingMessageUnified;
+
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
      struct _GUnixTimestampingMessageClass
@@ -49,7 +58,6 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
        GSocketControlMessageClass parent_class;
 
        /*< private > */
-       guint64 tunkptr;
 
        /* Padding for future expansion */
        void (*_g_reserved1) (void);
@@ -63,17 +71,12 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
      };
 
 GLIB_AVAILABLE_IN_ALL GType g_unix_timestamping_message_get_type (void) G_GNUC_CONST;
-
 GLIB_AVAILABLE_IN_ALL gboolean g_unix_timestamping_message_is_supported (void);
-
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_message_type_name (guint);
-
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_timestamping_type_name (guint);
-
 GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_raw(const gchar *);
-
-GLIB_AVAILABLE_IN_ALL GUnixTimestampingMessageParsed * g_unix_timestamping_parse_controlmessage_set(GSocketControlMessage **[2], guint);
-
+GLIB_AVAILABLE_IN_ALL GUnixTimestampingMessageUnified * g_unix_timestamping_unify_control_message_set(GSocketControlMessage *[2]);
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_unify_control_message_set_inplace(GSocketControlMessage *[2]);
 GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new (void);
 
 G_END_DECLS
