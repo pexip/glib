@@ -38,15 +38,26 @@ G_BEGIN_DECLS
 #define G_UNIX_TIMESTAMPING_SEND_SIZE (sizeof (int))
 #define G_UNIX_TIMESTAMPING_RECV_SIZE ((gsize)48)
 
+enum TIMESTAMPING_MASK {
+    TIMESTAMPING_MASK_SCHEDULED = 1 << 0,
+    TIMESTAMPING_MASK_SEND_SOFTWARE = 1 << 1,
+    TIMESTAMPING_MASK_SEND_HARDWARE = 1 << 2,
+    TIMESTAMPING_MASK_ANY = TIMESTAMPING_MASK_SCHEDULED|TIMESTAMPING_MASK_SEND_SOFTWARE|TIMESTAMPING_MASK_SEND_HARDWARE
+};
+
 struct _GUnixTimestampingMessageUnified
 {
   guint packet_id;
   guint timestamping_type;
+  guint timestamping_source;
   glong timestamping_sec;
   glong timestamping_nsec;  
 };
 
 typedef struct _GUnixTimestampingMessagePrivate GUnixTimestampingMessagePrivate;
+typedef struct _GUnixTimestampingMessageSenderPrivate GUnixTimestampingMessageSenderPrivate;
+typedef struct _GUnixTimestampingMessageReceiverPrivate GUnixTimestampingMessageReceiverPrivate;
+
 typedef struct _GUnixTimestampingMessageClass GUnixTimestampingMessageClass;
 typedef struct _GUnixTimestampingMessage GUnixTimestampingMessage;
 typedef struct _GUnixTimestampingMessageUnified GUnixTimestampingMessageUnified;
@@ -71,13 +82,16 @@ G_DEFINE_AUTOPTR_CLEANUP_FUNC (GUnixTimestampingMessage, g_object_unref)
      };
 
 GLIB_AVAILABLE_IN_ALL GType g_unix_timestamping_message_get_type (void) G_GNUC_CONST;
-GLIB_AVAILABLE_IN_ALL gboolean g_unix_timestamping_message_is_supported (void);
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_message_type_name (guint);
 GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_timestamping_type_name (guint);
+GLIB_AVAILABLE_IN_ALL const gchar * g_unix_timestamping_get_timestamping_source_name (guint);
 GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_raw(const gchar *);
-GLIB_AVAILABLE_IN_ALL GUnixTimestampingMessageUnified * g_unix_timestamping_unify_control_message_set(GSocketControlMessage *[2]);
-GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_unify_control_message_set_inplace(GSocketControlMessage *[2]);
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_unify_control_message_set(GSocketControlMessage *[2], GUnixTimestampingMessageUnified *);
 GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new (void);
+GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new_with_mask (guint timestamping_mask);
+
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_for_socket(GSocket *);
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_hardware_support(const gchar *);
 
 G_END_DECLS
 #endif // __G_UNIX_TIMESTAMPING_MESSAGE_H__
