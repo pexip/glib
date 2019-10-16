@@ -52,7 +52,8 @@ enum TIMESTAMPING_SOURCE {
 char * TIMESTAMPING_SOURCE_TO_STRING[__TIMESTAMPING_SOURCE_MAX__] = {"SOFTWARE", "TRANSFORMED", "HARDWARE"};
 
 struct _GUnixTimestampingMessageSenderPrivate{
-  guint mask;  
+  guint mask;
+  guint sof_timestamping_mask;
 };
 
 struct _GUnixTimestampingMessageReceiverPrivate{
@@ -146,18 +147,7 @@ static void
 g_unix_timestamping_message_serialize (GSocketControlMessage * _message, gpointer _data)
 {
   GUnixTimestampingMessage *message = G_UNIX_TIMESTAMPING_MESSAGE (_message);
-  guint *data = (guint *) _data;
-  *data = 0;
-
-  if (message->priv->sender.mask & TIMESTAMPING_MASK_SCHEDULED){
-    *data |= SOF_TIMESTAMPING_TX_SCHED;
-  }
-  if (message->priv->sender.mask & TIMESTAMPING_MASK_SEND_SOFTWARE){
-    *data |= SOF_TIMESTAMPING_TX_SOFTWARE;
-  }
-  if (message->priv->sender.mask & TIMESTAMPING_MASK_SEND_HARDWARE){
-    *data |= SOF_TIMESTAMPING_TX_HARDWARE;
-  }
+  *((guint *) _data) = message->priv->sender.sof_timestamping_mask;
 }
 
 static void
@@ -165,7 +155,7 @@ g_unix_timestamping_message_finalize (GObject *object)
 {
   G_OBJECT_CLASS (g_unix_timestamping_message_parent_class) ->finalize (object);
 }
-
+  
 static void
 g_unix_timestamping_message_get_property (GObject    *object,
                                          guint       prop_id,
@@ -233,6 +223,9 @@ g_unix_timestamping_message_set_property (GObject      *object,
       break;
     case PROP_TIMESTAMING_MASK:
       message->priv->sender.mask = g_value_get_uint(value);
+      message->priv->sender.sof_timestamping_mask = (((message->priv->sender.mask & TIMESTAMPING_MASK_SCHEDULED) ? SOF_TIMESTAMPING_TX_SCHED : 0) |
+                                                     ((message->priv->sender.mask & TIMESTAMPING_MASK_SEND_SOFTWARE) ? SOF_TIMESTAMPING_TX_SOFTWARE : 0) |
+                                                     ((message->priv->sender.mask & TIMESTAMPING_MASK_SEND_HARDWARE) ? SOF_TIMESTAMPING_TX_HARDWARE : 0));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -441,9 +434,10 @@ g_unix_timestamping_message_new_with_mask (guint timestamping_mask)
 gint
 g_unix_timestamping_enable_for_socket(GSocket * gsocket)
 {
-  GError *error = NULL;
+  // The following defines what will be reported. Nothing will be reported unless timestamp generation has been enabled for that packet
   gint so_timestamping_flags = SOF_TIMESTAMPING_SOFTWARE | SOF_TIMESTAMPING_RAW_HARDWARE | SOF_TIMESTAMPING_OPT_TX_SWHW | SOF_TIMESTAMPING_OPT_ID | SOF_TIMESTAMPING_OPT_TSONLY;
-
+  GError *error = NULL;
+  
   if (g_socket_set_option(gsocket, SOL_SOCKET, SO_TIMESTAMPING, so_timestamping_flags, &error) == FALSE){
       g_printerr ("g_socket_set_option level:SOL_SOCKET optname:SO_TIMESTAMPING value:%u failed: %s\n", so_timestamping_flags, error->message);
       return -1;
