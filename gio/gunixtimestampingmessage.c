@@ -445,6 +445,26 @@ g_unix_timestamping_enable_for_socket(GSocket * gsocket)
   return 0;
 }
 
+gboolean
+g_unix_timestamping_get_socket_enabled(GSocket * gsocket)
+{
+  return (g_unix_timestamping_get_socket_flags(gsocket) != 0) ? TRUE: FALSE;
+}
+
+gint
+g_unix_timestamping_get_socket_flags(GSocket * gsocket)
+{
+  GError *error = NULL;
+  gint so_timestamping_flags = 0;
+  
+  if (g_socket_get_option(gsocket, SOL_SOCKET, SO_TIMESTAMPING, &so_timestamping_flags, &error) == FALSE){
+      g_printerr ("g_socket_get_option level:SOL_SOCKET optname:SO_TIMESTAMPING failed: %s\n", error->message);
+      return -1;
+  }
+  g_debug("g_socket_get_option level:SOL_SOCKET optname:SO_TIMESTAMPING -> %u\n", so_timestamping_flags);
+  return so_timestamping_flags;
+}
+
 gint
 g_unix_timestamping_enable_hardware_support(const gchar * ifname)
 {
@@ -480,4 +500,3 @@ g_unix_timestamping_enable_hardware_support(const gchar * ifname)
   close(sd);
   return 0;
 }
-

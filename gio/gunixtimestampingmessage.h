@@ -91,6 +91,8 @@ GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new (v
 GLIB_AVAILABLE_IN_ALL GSocketControlMessage * g_unix_timestamping_message_new_with_mask (guint timestamping_mask);
 
 GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_for_socket(GSocket *);
+GLIB_AVAILABLE_IN_ALL gboolean g_unix_timestamping_get_socket_enabled(GSocket *);
+GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_get_socket_flags(GSocket *);
 GLIB_AVAILABLE_IN_ALL gint g_unix_timestamping_enable_hardware_support(const gchar *);
 
 G_END_DECLS
