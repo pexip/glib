@@ -254,7 +254,7 @@ glib_debug = get_option('glib_debug')
 if glib_debug.enabled() or (glib_debug.auto() and get_option('debug'))
   glib_debug_cflags += ['-DG_ENABLE_DEBUG']
   message('Enabling various debug infrastructure')
-elif get_option('optimization') in ['2', '3', 's']
+elif get_option('optimization') in ['1', '2', '3', 's']
   glib_debug_cflags += ['-DG_DISABLE_CAST_CHECKS']
   message('Disabling cast checks')
 endif
