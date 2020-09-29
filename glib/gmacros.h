@@ -752,7 +752,8 @@
 #ifdef __ICC
 #define G_GNUC_BEGIN_IGNORE_DEPRECATIONS                \
   _Pragma ("warning (push)")                            \
-  _Pragma ("warning (disable:1478)")
+  _Pragma ("warning (disable:1478)")                    \
+  _Pragma ("warning (disable:1786)")
 #define G_GNUC_END_IGNORE_DEPRECATIONS			\
   _Pragma ("warning (pop)")
 #elif G_GNUC_CHECK_VERSION(4, 6)
