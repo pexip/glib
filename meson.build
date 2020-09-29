@@ -240,7 +240,7 @@ if get_option('glib_debug')
   message('Enabling various debug infrastructure')
 endif
 
-if get_option('optimization') in ['2', '3', 's']
+if get_option('optimization') in ['1', '2', '3', 's']
   glib_debug_cflags += ['-DG_DISABLE_CAST_CHECKS']
   message('Disabling cast checks')
 endif
