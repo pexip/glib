@@ -235,10 +235,12 @@ endif
 # Use debug/optimization flags to determine whether to enable debug or disable
 # cast checks
 glib_debug_cflags = []
-if get_option('debug')
+if get_option('glib_debug')
   glib_debug_cflags += ['-DG_ENABLE_DEBUG']
   message('Enabling various debug infrastructure')
-elif get_option('optimization') in ['2', '3', 's']
+endif
+
+if get_option('optimization') in ['2', '3', 's']
   glib_debug_cflags += ['-DG_DISABLE_CAST_CHECKS']
   message('Disabling cast checks')
 endif

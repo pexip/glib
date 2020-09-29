@@ -111,3 +111,9 @@ option('glib_checks',
        value : true,
        yield : true,
        description : 'Enable GLib checks such as API guards (see docs/macros.txt)')
+
+option('glib_debug',
+       type : 'boolean',
+       value : true,
+       yield : true,
+       description : 'Enable GLib extra debug (see docs/macros.txt)')
