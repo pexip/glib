@@ -54,6 +54,9 @@ struct _GHashTableIter
 };
 
 GLIB_AVAILABLE_IN_ALL
+int g_hash_table_version (GHashTable * h);
+
+GLIB_AVAILABLE_IN_ALL
 GHashTable* g_hash_table_new               (GHashFunc       hash_func,
                                             GEqualFunc      key_equal_func);
 GLIB_AVAILABLE_IN_ALL

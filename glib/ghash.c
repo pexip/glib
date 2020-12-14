@@ -950,6 +950,8 @@ g_hash_table_ensure_keyval_fits (GHashTable *hash_table, gpointer key, gpointer 
 #endif
 }
 
+int g_hash_table_version (GHashTable * h) { return h->version; }
+
 /**
  * g_hash_table_new:
  * @hash_func: a function to create a hash value from a key
