@@ -409,6 +409,8 @@ G_END_DECLS
 
 #else /* defined(G_ATOMIC_LOCK_FREE) && defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4) */
 
+#if !defined(G_PLATFORM_WIN32)
+
 #define g_atomic_int_get(atomic) \
   (g_atomic_int_get ((gint *) (atomic)))
 #define g_atomic_int_set(atomic, newval) \
@@ -441,7 +443,7 @@ G_END_DECLS
 #else /* !(defined(glib_typeof) && (!defined(glib_typeof_2_68) || GLIB_VERSION_MIN_REQUIRED >= GLIB_VERSION_2_68)) */
 #define g_atomic_pointer_get(atomic) \
   (g_atomic_pointer_get (atomic))
-#endif
+#endif /* !(defined(glib_typeof) && (!defined(glib_typeof_2_68) || GLIB_VERSION_MIN_REQUIRED >= GLIB_VERSION_2_68)) */
 
 #define g_atomic_pointer_set(atomic, newval) \
   (g_atomic_pointer_set ((atomic), (gpointer) (newval)))
@@ -456,6 +458,8 @@ G_END_DECLS
   (g_atomic_pointer_or ((atomic), (gsize) (val)))
 #define g_atomic_pointer_xor(atomic, val) \
   (g_atomic_pointer_xor ((atomic), (gsize) (val)))
+
+#endif /* #!defined(G_PLATFORM_WIN32) */
 
 #endif /* defined(G_ATOMIC_LOCK_FREE) && defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4) */
 
@@ -532,139 +536,73 @@ _gInterlockedXor (volatile guint *atomic,
 /*
  * http://msdn.microsoft.com/en-us/library/ms684122(v=vs.85).aspx
  */
-static inline gint
-(g_atomic_int_get) (const volatile gint *atomic)
-{
-	__faststorefence ();
-	return *atomic;
-}
+#define g_atomic_int_get(atomic) \
+  (__faststorefence (), *(const volatile gint *) (atomic))
 
-static inline void
-(g_atomic_int_set)(volatile gint *atomic,
-	gint           newval)
-{
-	*atomic = newval;
-	__faststorefence ();
-}
+#define g_atomic_int_set(atomic, newval) \
+  ( *((volatile gint *) (atomic)) = (gint) (newval), __faststorefence ())
 
-static inline void
-(g_atomic_int_inc)(volatile gint *atomic)
-{
-	_InterlockedIncrement ((volatile long *)atomic);
-}
+#define g_atomic_int_compare_and_exchange(atomic, oldval, newval) \
+  (_InterlockedCompareExchange ((volatile long *) (atomic), \
+      (long) (newval), (long) (oldval)) == (long) (oldval))
 
-static inline gboolean
-(g_atomic_int_dec_and_test) (volatile gint *atomic)
-{
-	return _InterlockedDecrement ((volatile long *)atomic) == 0;
-}
+#define g_atomic_int_inc(atomic) \
+  (_InterlockedIncrement ((volatile long *) (atomic)))
 
-static inline gboolean
-(g_atomic_int_compare_and_exchange) (volatile gint *atomic,
-	gint           oldval,
-	gint           newval)
-{
-	return _InterlockedCompareExchange ((volatile long *)atomic, (long)newval, (long)oldval) == oldval;
-}
+#define g_atomic_int_dec_and_test(atomic) \
+  (_InterlockedDecrement ((volatile long *) (atomic)) == 0)
 
-static inline gint
-(g_atomic_int_add) (volatile gint *atomic,
-	gint           val)
-{
-	return _InterlockedExchangeAdd ((volatile long *)atomic, (long)val);
-}
+#define g_atomic_int_add(atomic, val) \
+  (_InterlockedExchangeAdd ((volatile long *) (atomic), (long) (val)))
 
-static inline guint
-(g_atomic_int_and) (volatile guint *atomic,
-	guint           val)
-{
-	return _InterlockedAnd ((volatile long *)atomic, (long)val);
-}
+#define g_atomic_int_and(atomic, val) \
+  (_InterlockedAnd ((volatile long *) (atomic), (long) (val)))
 
-static inline guint
-(g_atomic_int_or) (volatile guint *atomic,
-	guint           val)
-{
-	return _InterlockedOr ((volatile long *)atomic, (long)val);
-}
+#define g_atomic_int_or(atomic, val) \
+  (_InterlockedOr ((volatile long *) (atomic), (long) (val)))
 
-static inline guint
-(g_atomic_int_xor) (volatile guint *atomic,
-	guint           val)
-{
-	return _InterlockedXor ((volatile long *)atomic, (long)val);
-}
+#define g_atomic_int_xor(atomic, val) \
+  (_InterlockedXor ((volatile long *) (atomic), (long) (val)))
 
-static inline gpointer
-(g_atomic_pointer_get) (const volatile void *atomic)
-{
-	const volatile gpointer *ptr = (const volatile gpointer *)atomic;
+#define g_atomic_pointer_get(atomic) \
+  (__faststorefence (), *(const volatile gpointer *) (atomic))
 
-	__faststorefence ();
-	return *ptr;
-}
+#define g_atomic_pointer_set(atomic, newval) \
+  ( *((volatile gpointer *) (atomic)) = (gpointer) (newval), __faststorefence ())
 
-static inline void
-(g_atomic_pointer_set)(volatile void *atomic,
-	gpointer       newval)
-{
-	volatile gpointer *ptr = (volatile gpointer *)atomic;
+#define g_atomic_pointer_compare_and_exchange(atomic, oldval, newval) \
+  (_InterlockedCompareExchangePointer ((void *volatile *) (atomic), \
+        (gpointer) (newval), (gpointer) (oldval)) == (gpointer) (oldval))
 
-	*ptr = newval;
-	__faststorefence ();
-}
-
-static inline gboolean
-(g_atomic_pointer_compare_and_exchange) (volatile void *atomic,
-	gpointer       oldval,
-	gpointer       newval)
-{
-	return _InterlockedCompareExchangePointer ((void *volatile *)atomic, newval, oldval) == oldval;
-}
-
-static inline gssize
-(g_atomic_pointer_add) (volatile void *atomic,
-	gssize         val)
-{
 #if GLIB_SIZEOF_VOID_P == 8
-	return _InterlockedExchangeAdd64 ((volatile __int64 *)atomic, (__int64)val);
-#else
-	return _InterlockedExchangeAdd ((volatile long *)atomic, (long)val);
-#endif
-}
 
-static inline gsize
-(g_atomic_pointer_and) (volatile void *atomic,
-	gsize          val)
-{
-#if GLIB_SIZEOF_VOID_P == 8
-	return _InterlockedAnd64 ((volatile __int64 *)atomic, (__int64)val);
-#else
-	return _InterlockedAnd ((volatile long *)atomic, (long)val);
-#endif
-}
+#define g_atomic_pointer_add(atomic, val) \
+  (_InterlockedExchangeAdd64 ((volatile __int64 *) (atomic), (__int64) (val)))
 
-static inline gsize
-(g_atomic_pointer_or) (volatile void *atomic,
-	gsize          val)
-{
-#if GLIB_SIZEOF_VOID_P == 8
-	return _InterlockedOr64 ((volatile __int64 *)atomic, (__int64)val);
-#else
-	return _InterlockedOr ((volatile long *)atomic, (long)val);
-#endif
-}
+#define g_atomic_pointer_and(atomic, val) \
+  (_InterlockedAnd64 ((volatile __int64 *) (atomic), (__int64) (val)))
 
-static inline gsize
-(g_atomic_pointer_xor) (volatile void *atomic,
-	gsize          val)
-{
-#if GLIB_SIZEOF_VOID_P == 8
-	return _InterlockedXor64 ((volatile __int64 *)atomic, (__int64)val);
-#else
-	return _InterlockedXor ((volatile long *)atomic, (long)val);
-#endif
-}
+#define g_atomic_pointer_or(atomic, val) \
+  (_InterlockedOr64 ((volatile __int64 *) (atomic), (__int64) (val)))
+
+#define g_atomic_pointer_xor(atomic, val) \
+  (_InterlockedXor64 ((volatile __int64 *) (atomic), (__int64) (val)))
+
+#else /* GLIB_SIZEOF_VOID_P == 8 */
+
+#define g_atomic_pointer_add(atomic, val) \
+  (_InterlockedExchangeAdd ((volatile long *) (atomic), (long) (val)))
+
+#define g_atomic_pointer_and(atomic, val) \
+  (_InterlockedAnd ((volatile long *) (atomic), (long) (val)))
+
+#define g_atomic_pointer_or(atomic, val) \
+  (_InterlockedOr ((volatile long *) (atomic), (long) (val)))
+
+#define g_atomic_pointer_xor(atomic, val) \
+  (_InterlockedXor ((volatile long *) (atomic), (long) (val)))
+
+#endif /* GLIB_SIZEOF_VOID_P == 8 */
 
 #endif /* defined(G_PLATFORM_WIN32) */
 
