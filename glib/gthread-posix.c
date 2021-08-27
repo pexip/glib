@@ -77,6 +77,13 @@
 #define USE_NATIVE_MUTEX
 #endif
 
+/* Use parkinglot for lock and cond management */
+#define USE_PARKING_LOT 1
+
+#if defined(USE_PARKING_LOT)
+#include "parkinglotc.h"
+#endif
+
 static void
 g_thread_abort (gint         status,
                 const gchar *function)
@@ -87,8 +94,7 @@ g_thread_abort (gint         status,
 }
 
 /* {{{1 GMutex */
-
-#if !defined(USE_NATIVE_MUTEX)
+#if !defined(USE_NATIVE_MUTEX) && !defined(USE_PARKING_LOT)
 
 static pthread_mutex_t *
 g_mutex_impl_new (void)
@@ -272,6 +278,8 @@ g_mutex_trylock (GMutex *mutex)
 }
 
 #endif /* !defined(USE_NATIVE_MUTEX) */
+
+#if !defined(USE_PARKING_LOT)
 
 /* {{{1 GRecMutex */
 
@@ -663,9 +671,10 @@ g_rw_lock_reader_unlock (GRWLock *rw_lock)
   pthread_rwlock_unlock (g_rw_lock_get_impl (rw_lock));
 }
 
+#endif /* !defined(USE_PARKING_LOT) */
 /* {{{1 GCond */
 
-#if !defined(USE_NATIVE_MUTEX)
+#if !defined(USE_NATIVE_MUTEX) && !defined(USE_PARKING_LOT)
 
 static pthread_cond_t *
 g_cond_impl_new (void)
@@ -1394,7 +1403,7 @@ g_system_thread_set_name (const gchar *name)
 
 /* {{{1 GMutex and GCond futex implementation */
 
-#if defined(USE_NATIVE_MUTEX)
+#if defined(USE_NATIVE_MUTEX) && !defined(USE_PARKING_LOT)
 
 #include <linux/futex.h>
 #include <sys/syscall.h>
@@ -1626,7 +1635,222 @@ g_cond_wait_until (GCond  *cond,
   return success;
 }
 
-#endif
+#endif /* defined(USE_NATIVE_MUTEX) && !defined(USE_PARKING_LOT) */
 
+#if defined(USE_PARKING_LOT)
+
+/* Mutex */
+void
+g_mutex_init (GMutex *mutex)
+{
+ plc_mutex_init((uintptr_t*)&mutex->p);
+}
+
+void
+g_mutex_clear (GMutex *mutex)
+{
+  plc_mutex_clear ((uintptr_t*)&mutex->p);
+}
+
+void
+g_mutex_lock (GMutex *mutex)
+{
+  plc_mutex_lock((uintptr_t*)&mutex->p);
+}
+
+void
+g_mutex_unlock (GMutex *mutex)
+{
+  plc_mutex_unlock((uintptr_t*)&mutex->p);
+}
+
+gboolean
+g_mutex_trylock (GMutex *mutex)
+{
+  return plc_mutex_try_lock((uintptr_t*)&mutex->p);
+}
+
+/* Rec mutex */
+static inline uintptr_t *
+g_rec_mutex_get_impl (GRecMutex *mutex)
+{
+  uintptr_t *impl = g_atomic_pointer_get (&mutex->p);
+
+  if G_UNLIKELY (impl == NULL)
+    {
+      uintptr_t new = 0;
+      plc_rmutex_init (&new);
+      if (!g_atomic_pointer_compare_and_exchange (&mutex->p, NULL, (gpointer)new))
+      {
+        plc_rmutex_clear (&new);
+      }
+    }
+
+  return (uintptr_t*)&mutex->p;
+}
+
+void
+g_rec_mutex_init (GRecMutex *mutex)
+{
+  plc_rmutex_init ((uintptr_t*)&mutex->p);
+}
+
+void
+g_rec_mutex_clear (GRecMutex *mutex)
+{
+  if (mutex != NULL)
+  {
+     plc_rmutex_clear ((uintptr_t*)&mutex->p);
+  }
+}
+
+void
+g_rec_mutex_lock (GRecMutex *mutex)
+{
+  plc_rmutex_lock(g_rec_mutex_get_impl(mutex));
+}
+
+void
+g_rec_mutex_unlock (GRecMutex *mutex)
+{
+  plc_rmutex_unlock(g_rec_mutex_get_impl(mutex));
+}
+
+gboolean
+g_rec_mutex_trylock (GRecMutex *mutex)
+{
+  return plc_rmutex_try_lock(g_rec_mutex_get_impl(mutex));
+}
+
+/* RWlock */
+
+static inline uintptr_t *
+g_rw_lock_get_impl (GRWLock *lock)
+{
+  uintptr_t *impl = g_atomic_pointer_get (&lock->p);
+
+  if G_UNLIKELY (impl == NULL)
+    {
+      uintptr_t new = 0;
+      plc_rwlock_init (&new);
+      if (!g_atomic_pointer_compare_and_exchange (&lock->p, NULL, (gpointer)new))
+      {
+        plc_rwlock_clear (&new);
+      }
+    }
+
+  return (uintptr_t*)&lock->p;
+}
+
+void
+g_rw_lock_init (GRWLock *rw_lock)
+{
+  plc_rwlock_init ((uintptr_t*)&rw_lock->p);
+}
+
+void
+g_rw_lock_clear (GRWLock *rw_lock)
+{
+  if (rw_lock != NULL)
+  {
+     plc_rwlock_clear ((uintptr_t*)&rw_lock->p);
+  }
+}
+
+void
+g_rw_lock_writer_lock (GRWLock *rw_lock)
+{
+  plc_rwlock_lock_exclusive(g_rw_lock_get_impl(rw_lock));
+}
+
+gboolean
+g_rw_lock_writer_trylock (GRWLock *rw_lock)
+{
+  return plc_rwlock_try_lock_exclusive(g_rw_lock_get_impl(rw_lock));
+}
+
+void
+g_rw_lock_writer_unlock (GRWLock *rw_lock)
+{
+  plc_rwlock_unlock_exclusive(g_rw_lock_get_impl(rw_lock));
+
+}
+
+void
+g_rw_lock_reader_lock (GRWLock *rw_lock)
+{
+  plc_rwlock_lock_shared(g_rw_lock_get_impl(rw_lock));
+
+}
+
+gboolean
+g_rw_lock_reader_trylock (GRWLock *rw_lock)
+{
+  return plc_rwlock_try_lock_shared(g_rw_lock_get_impl(rw_lock));
+}
+
+void
+g_rw_lock_reader_unlock (GRWLock *rw_lock)
+{
+  plc_rwlock_unlock_shared(g_rw_lock_get_impl(rw_lock));
+
+}
+
+/* Condition */
+void
+g_cond_init (GCond *cond)
+{
+ plc_cond_init((uintptr_t*)&cond->p);
+}
+
+void
+g_cond_clear (GCond *cond)
+{
+  plc_cond_clear ((uintptr_t*)&cond->p);
+}
+
+void
+g_cond_wait (GCond *cond, GMutex* mutex)
+{
+  plc_cond_wait((uintptr_t*)&cond->p, (uintptr_t*)&mutex->p);
+}
+
+void
+g_cond_signal (GCond *cond)
+{
+  plc_cond_notify_one((uintptr_t*)&cond->p);
+}
+
+void
+g_cond_broadcast (GCond *cond)
+{
+  (void)plc_cond_notify_all((uintptr_t*)&cond->p);
+}
+
+gboolean
+g_cond_wait_until (GCond  *cond,
+                   GMutex *mutex,
+                   gint64  end_time)
+{
+  struct timespec now;
+  struct timespec span;
+
+  if (end_time < 0)
+    return FALSE;
+
+  clock_gettime (CLOCK_MONOTONIC, &now);
+  span.tv_sec = (end_time / 1000000) - now.tv_sec;
+  span.tv_nsec = ((end_time % 1000000) * 1000) - now.tv_nsec;
+  if (span.tv_nsec < 0)
+    {
+      span.tv_nsec += 1000000000;
+      span.tv_sec--;
+    }
+
+  if (span.tv_sec < 0)
+    return FALSE;
+  return !plc_cond_wait_for((uintptr_t*)&cond->p, (uintptr_t*)&mutex->p, span.tv_sec, span.tv_nsec);
+}
+#endif
   /* {{{1 Epilogue */
 /* vim:set foldmethod=marker: */

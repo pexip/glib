@@ -471,6 +471,8 @@ add_project_arguments(cc.get_supported_arguments(warning_c_args), language: 'c')
 # improve this.
 glib_link_flags = cc.get_supported_link_arguments(warning_c_link_args)
 
+glib_link_flags += [meson.current_source_dir()+'/libparkinglotc.so']
+
 # Windows SDK requirements and checks
 if host_system == 'windows'
   # Check whether we're building for UWP apps
