@@ -77,6 +77,9 @@
 #define USE_NATIVE_MUTEX
 #endif
 
+#define UNW_LOCAL_ONLY 1
+#include <libunwind.h>
+
 static void
 g_thread_abort (gint         status,
                 const gchar *function)
@@ -1270,6 +1273,23 @@ linux_pthread_proxy (void *data)
 }
 #endif
 
+static void print_stacktrace (void);
+static void print_stacktrace (void) {
+  char name[32];
+  unw_word_t offset = 0;
+  unw_cursor_t cursor; unw_context_t uc;
+  unw_word_t ip, sp;
+
+  unw_getcontext(&uc);
+  unw_init_local(&cursor, &uc);
+  while (unw_step(&cursor) > 0) {
+    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    unw_get_reg(&cursor, UNW_REG_SP, &sp);
+    unw_get_proc_name (&cursor, name, sizeof (name), &offset);
+    fprintf (stderr,"ip = %08lx, sp = %08lx %s (0x%lx)\n", (long) ip, (long) sp, name, offset);
+  }
+}
+
 GRealThread *
 g_system_thread_new (GThreadFunc proxy,
                      gulong stack_size,
@@ -1283,6 +1303,10 @@ g_system_thread_new (GThreadFunc proxy,
   GRealThread *base_thread;
   pthread_attr_t attr;
   gint ret;
+
+  fprintf (stderr, "Thread New: %s\n", name);
+
+  print_stacktrace();
 
   thread = g_slice_new0 (GThreadPosix);
   base_thread = (GRealThread*)thread;
