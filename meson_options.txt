@@ -127,3 +127,13 @@ option('libelf',
        type : 'feature',
        value : 'auto',
        description : 'Enable support for listing and extracting from ELF resource files with gresource tool')
+
+option('force_have',
+       type : 'array',
+       value : [],
+       description : 'Force enabling config values')
+
+option('force_dont_have',
+       type : 'array',
+       value : [],
+       description : 'Force disabling config values')

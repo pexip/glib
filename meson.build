@@ -2380,7 +2380,18 @@ if host_system != 'windows'
     install_dir : join_paths(get_option('datadir'), 'glib-2.0', 'valgrind'))
 endif
 
-configure_file(output : 'config.h', configuration : glib_conf)
+actual_glib_conf = configuration_data()
+foreach have : get_option('force_have')
+  if key not in get_option('force_dont_have')
+    actual_glib_conf.set(have, 1)
+  endif
+endforeach
+foreach key : glib_conf.keys()
+  if key not in get_option('force_dont_have')
+    actual_glib_conf.set(key, glib_conf.get(key))
+  endif
+endforeach
+configure_file(output : 'config.h', configuration : actual_glib_conf)
 
 if host_system == 'windows'
   install_headers([ 'msvc_recommended_pragmas.h' ], subdir : 'glib-2.0')
