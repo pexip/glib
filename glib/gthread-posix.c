@@ -1314,8 +1314,10 @@ g_system_thread_new (GThreadFunc proxy,
 #ifdef HAVE_PTHREAD_ATTR_SETINHERITSCHED
   if (!scheduler_settings)
     {
+      #if !defined(__ANDROID__)
       /* While this is the default, better be explicit about it */
       pthread_attr_setinheritsched (&attr, PTHREAD_INHERIT_SCHED);
+      #endif
     }
 #endif /* HAVE_PTHREAD_ATTR_SETINHERITSCHED */
 
