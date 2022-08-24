@@ -207,7 +207,7 @@ static GTimeZone *tz_local = NULL;
                            there's no point in getting carried
                            away. */
 
-#ifdef G_OS_UNIX
+#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
 static GTimeZone *parse_footertz (const gchar *, size_t);
 #endif
 
@@ -509,6 +509,7 @@ zone_identifier_illumos (void)
 }
 #endif /* defined(__sun) && defined(__SRVR) */
 
+/* FIXME IFDEF WASM?*/
 /*
  * returns the path to the top of the Olson zoneinfo timezone hierarchy.
  */
@@ -1666,7 +1667,7 @@ rules_from_identifier (const gchar   *identifier,
   return create_ruleset_from_rule (rules, &tzr);
 }
 
-#ifdef G_OS_UNIX
+#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
 static GTimeZone *
 parse_footertz (const gchar *footer, size_t footerlen)
 {
@@ -1825,7 +1826,9 @@ g_time_zone_new_identifier (const gchar *identifier)
   else
     {
       G_LOCK (tz_default);
-#ifdef G_OS_UNIX
+#ifdef G_PLATFORM_WASM
+      resolved_identifier = g_strdup ("UTC0");
+#elif defined (G_OS_UNIX)
       resolved_identifier = zone_identifier_unix ();
 #elif defined (G_OS_WIN32)
       resolved_identifier = windows_default_tzname ();
@@ -1865,7 +1868,7 @@ g_time_zone_new_identifier (const gchar *identifier)
 
   if (tz->t_info == NULL)
     {
-#ifdef G_OS_UNIX
+#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
       GBytes *zoneinfo = zone_info_unix (identifier, resolved_identifier);
       if (zoneinfo != NULL)
         {

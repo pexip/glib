@@ -92,6 +92,7 @@ gboolean
 glib_network_available_in_sandbox (void)
 {
   read_flatpak_info ();
+
   return network_available;
 }
 
@@ -99,5 +100,6 @@ gboolean
 glib_has_dconf_access_in_sandbox (void)
 {
   read_flatpak_info ();
+
   return dconf_access;
 }
