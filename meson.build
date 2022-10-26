@@ -2043,7 +2043,10 @@ gvdb_dep = dependency('gvdb')
 libm = cc.find_library('m', required : false)
 libffi_dep = dependency('libffi', version : '>= 3.0.0', fallback : ['libffi', 'ffi_dep'])
 
-libz_dep = dependency('zlib')
+libz_dep = subproject('zlib').get_variable('zlib_dep')
+if not libz_dep.found()
+  libz_dep = dependency('zlib')
+endif
 
 # First check in libc, fallback to libintl, and as last chance build
 # proxy-libintl subproject.
