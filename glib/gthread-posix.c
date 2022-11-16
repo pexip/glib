@@ -966,6 +966,10 @@ g_mutex_lock_impl (GMutex *mutex)
                                                      G_MUTEX_STATE_EMPTY,
                                                      G_MUTEX_STATE_OWNED))
     g_mutex_lock_slowpath (mutex);
+
+#ifdef G_ENABLE_PEX_CHECKS
+  mutex->i[1] = (guint) syscall (SYS_gettid);
+#endif
 }
 
 void

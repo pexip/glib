@@ -132,6 +132,11 @@ option('glib_checks',
        yield : true,
        description : 'Enable GLib checks such as API guards (see docs/macros.md)')
 
+option('pex_checks',
+       type : 'boolean',
+       value : false,
+       description : 'Enable extra PEX checks')
+
 option('libelf',
        type : 'feature',
        value : 'auto',
