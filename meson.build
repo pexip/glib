@@ -346,6 +346,11 @@ if not get_option('glib_checks')
   message('Disabling GLib checks')
 endif
 
+if get_option('pex_checks')
+  glib_debug_cflags += ['-DG_ENABLE_PEX_CHECKS']
+  message('Enabling Pex checks')
+endif
+
 add_project_arguments(glib_debug_cflags, language: 'c')
 
 # check for header files
