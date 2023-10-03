@@ -2111,7 +2111,7 @@ guint     g_type_get_type_registration_serial (void);
 #if GLIB_VERSION_MAX_ALLOWED >= GLIB_VERSION_2_38
 #define _G_DEFINE_TYPE_EXTENDED_CLASS_INIT(TypeName, type_name) \
 static void     type_name##_class_intern_init (gpointer klass, \
-                                               gpointer class_data) \
+                                               G_GNUC_UNUSED gpointer class_data) \
 { \
   type_name##_parent_class = g_type_class_peek_parent (klass); \
   if (TypeName##_private_offset != 0) \
@@ -2122,7 +2122,7 @@ static void     type_name##_class_intern_init (gpointer klass, \
 #else
 #define _G_DEFINE_TYPE_EXTENDED_CLASS_INIT(TypeName, type_name) \
 static void     type_name##_class_intern_init (gpointer klass, \
-                                               gpointer class_data) \
+                                               G_GNUC_UNUSED gpointer class_data) \
 { \
   type_name##_parent_class = g_type_class_peek_parent (klass); \
   type_name##_class_init ((TypeName##Class*) klass); \
@@ -2135,7 +2135,7 @@ static void     type_name##_class_intern_init (gpointer klass, \
 static void     type_name##_init              (TypeName        *self); \
 static void     type_name##_class_init        (TypeName##Class *klass); \
 static void     type_name##_init_adapter      (TypeName        *self, \
-                                               gpointer         class_data) \
+                                                G_GNUC_UNUSED gpointer         class_data) \
 { \
   type_name##_init (self); \
 } \

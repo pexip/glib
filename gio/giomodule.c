@@ -1348,10 +1348,12 @@ _g_io_modules_ensure_loaded (void)
       g_type_ensure (g_nextstep_settings_backend_get_type ());
       g_type_ensure (g_osx_app_info_get_type ());
 #endif
-#ifdef G_OS_UNIX
+#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
       g_type_ensure (_g_unix_volume_monitor_get_type ());
-      g_type_ensure (g_debug_controller_dbus_get_type ());
       g_type_ensure (g_fdo_notification_backend_get_type ());
+#endif
+#ifdef G_OS_UNIX
+      g_type_ensure (g_debug_controller_dbus_get_type ());
       g_type_ensure (g_gtk_notification_backend_get_type ());
       g_type_ensure (g_portal_notification_backend_get_type ());
       g_type_ensure (g_memory_monitor_dbus_get_type ());

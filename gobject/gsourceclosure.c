@@ -199,11 +199,11 @@ closure_callback_get (gpointer     cb_data,
 
   if (!closure_callback)
     {
-      if (source->source_funcs == &g_io_watch_funcs)
-        closure_callback = (GSourceFunc)io_watch_closure_callback;
-      else if (source->source_funcs == &g_child_watch_funcs)
+      if (source->source_funcs == &g_child_watch_funcs)
         closure_callback = (GSourceFunc)g_child_watch_closure_callback;
 #if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
+      else if (source->source_funcs == &g_io_watch_funcs)
+        closure_callback = (GSourceFunc)io_watch_closure_callback;
       else if (source->source_funcs == &g_unix_fd_source_funcs)
         closure_callback = (GSourceFunc)g_unix_fd_source_closure_callback;
 #endif
@@ -254,9 +254,9 @@ g_source_set_closure (GSource  *source,
 #if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
       source->source_funcs != &g_unix_fd_source_funcs &&
       source->source_funcs != &g_unix_signal_funcs &&
+      source->source_funcs != &g_io_watch_funcs &&
 #endif
       source->source_funcs != &g_child_watch_funcs &&
-      source->source_funcs != &g_io_watch_funcs &&
       source->source_funcs != &g_timeout_funcs &&
       source->source_funcs != &g_idle_funcs)
     {

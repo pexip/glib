@@ -828,7 +828,7 @@ libgio = library('gio-2.0',
                   libgobject_dep, libgmodule_dep, selinux_dep, xattr_dep,
                   platform_deps, network_libs, libsysprof_capture_dep,
                   gioenumtypes_dep, gvdb_dep],
-  c_args : [gio_c_args, gio_c_args_internal],
+  c_args : [gio_c_args, gio_c_args_internal, '-pthread'],
   objc_args : [gio_c_args, gio_c_args_internal],
   gnu_symbol_visibility : 'hidden',
   # intl.lib is not compatible with SAFESEH
