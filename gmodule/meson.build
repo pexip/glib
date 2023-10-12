@@ -73,7 +73,7 @@ gvisibility_h = configure_file(
 install_headers(gvisibility_h, subdir : 'glib-2.0/gmodule')
 
 gmodule_sources = [gmodule_c]
-if host_system == 'windows'
+if host_system == 'windows' and get_option('default_library') == 'shared'
   gmodule_win_rc = configure_file(
     input: 'gmodule.rc.in',
     output: 'gmodule.rc',
