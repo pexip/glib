@@ -6235,7 +6235,7 @@ typedef
    is the number of characters printed, excluding the "**<pid>** " part at the
    start and the backtrace (if present). */
 
-#if defined(__GNUC__) || defined(__INTEL_COMPILER) && !defined(_MSC_VER)
+#if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER) && !defined(_MSC_VER)
 /* Modern GCC will optimize the static routine out if unused,
    and unused attribute will shut down warnings about it.  */
 static int VALGRIND_PRINTF(const char *format, ...)
@@ -6276,7 +6276,7 @@ VALGRIND_PRINTF(const char *format, ...)
 #endif /* NVALGRIND */
 }
 
-#if defined(__GNUC__) || defined(__INTEL_COMPILER) && !defined(_MSC_VER)
+#if defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER) && !defined(_MSC_VER)
 static int VALGRIND_PRINTF_BACKTRACE(const char *format, ...)
    __attribute__((format(__printf__, 1, 2), __unused__));
 #endif
