@@ -45,6 +45,18 @@
 
 #endif
 
+/**
+ * G_CONTAINER_OF:
+ * @ptr: a pointer to a member @field of type @type.
+ * @type: the type of the container in which @field is embedded.
+ * @field: the name of the field in @type.
+ *
+ * Casts away constness of @ptr.
+ *
+ * Returns: a pointer to the container, so that "&(@container)->field == (@ptr)" holds.
+ */
+#define G_CONTAINER_OF(ptr, type, field) ((type *) G_STRUCT_MEMBER_P (ptr, -G_STRUCT_OFFSET (type, field)))
+
 /*
  * g_ignore_leak:
  * @p: any pointer
@@ -209,5 +221,8 @@ GLibPrivateVTable *glib__private__ (void);
 #else
 # define GLIB_DEFAULT_LOCALE ""
 #endif
+
+gboolean g_uint_equal (gconstpointer v1, gconstpointer v2);
+guint g_uint_hash (gconstpointer v);
 
 #endif /* __GLIB_PRIVATE_H__ */
