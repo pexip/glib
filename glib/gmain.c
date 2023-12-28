@@ -2463,10 +2463,10 @@ g_main_context_find_source_by_id (GMainContext *context,
 
   LOCK_CONTEXT (context);
   source = g_hash_table_lookup (context->sources, GUINT_TO_POINTER (source_id));
-  UNLOCK_CONTEXT (context);
 
   if (source && SOURCE_DESTROYED (source))
     source = NULL;
+  UNLOCK_CONTEXT (context);
 
   return source;
 }
