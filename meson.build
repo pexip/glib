@@ -1227,7 +1227,6 @@ int
 doit()
 {
   char buffer[32];
-  va_list args;
   int r;
 
   r = snprintf(buffer, 5, "1234567");
