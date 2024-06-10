@@ -227,8 +227,9 @@ g_wakeup_acknowledge (GWakeup *wakeup)
   g_error ("g_wakeup_acknowledge is no-op on WebAssembly");
 #else
   char buffer[16];
-      while (read (wakeup->fds[0], &value, sizeof (value)) == sizeof (value));
-    }
+
+  /* read until it is empty */
+  while (read (wakeup->fds[0], buffer, sizeof buffer) == sizeof buffer);
 #endif
 }
 
