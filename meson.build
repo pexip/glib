@@ -2314,29 +2314,33 @@ endif
 # implementations. This could be extended if issues are found in some platforms.
 libintl_deps = []
 libintl_prefix = '#include <libintl.h>'
-libintl = dependency('intl', required: false)
-if libintl.found() and libintl.type_name() != 'internal'
-  # libintl supports different threading APIs, which may not
-  # require additional flags, but it defaults to using pthreads if
-  # found. Meson's "threads" dependency does not allow you to
-  # prefer pthreads. We may not be using pthreads for glib itself
-  # either so just link the library to satisfy libintl rather than
-  # also defining the macros with the -pthread flag.
-  #
-  # Meson's builtin dependency lookup as of 0.60.0 doesn't check for
-  # pthread, so we do this manually here.
-  if cc.has_function('ngettext', dependencies : libintl, prefix: libintl_prefix)
-    libintl_deps += [libintl]
-  else
-    libintl_iconv = cc.find_library('iconv', required : false)
-    if libintl_iconv.found() and cc.has_function('ngettext', args : osx_ldflags, dependencies : [libintl, libintl_iconv])
-      libintl_deps += [libintl, libintl_iconv]
+if host_system in ['darwin', 'ios']
+  libintl = disabler()
+else
+  libintl = dependency('intl', required: false)
+  if libintl.found() and libintl.type_name() != 'internal'
+    # libintl supports different threading APIs, which may not
+    # require additional flags, but it defaults to using pthreads if
+    # found. Meson's "threads" dependency does not allow you to
+    # prefer pthreads. We may not be using pthreads for glib itself
+    # either so just link the library to satisfy libintl rather than
+    # also defining the macros with the -pthread flag.
+    #
+    # Meson's builtin dependency lookup as of 0.60.0 doesn't check for
+    # pthread, so we do this manually here.
+    if cc.has_function('ngettext', dependencies : libintl, prefix: libintl_prefix)
+      libintl_deps += [libintl]
     else
-      libintl_pthread = cc.find_library('pthread', required : false)
-      if libintl_pthread.found() and cc.has_function('ngettext', dependencies : [libintl, libintl_pthread], prefix: libintl_prefix)
-        libintl_deps += [libintl, libintl_pthread]
+      libintl_iconv = cc.find_library('iconv', required : false)
+      if libintl_iconv.found() and cc.has_function('ngettext', args : osx_ldflags, dependencies : [libintl, libintl_iconv])
+        libintl_deps += [libintl, libintl_iconv]
       else
-        libintl = disabler()
+        libintl_pthread = cc.find_library('pthread', required : false)
+        if libintl_pthread.found() and cc.has_function('ngettext', dependencies : [libintl, libintl_pthread], prefix: libintl_prefix)
+          libintl_deps += [libintl, libintl_pthread]
+        else
+          libintl = disabler()
+        endif
       endif
     endif
   endif
@@ -2346,8 +2350,13 @@ if libintl.found() and libintl.type_name() != 'internal'
   have_bind_textdomain_codeset = cc.has_function('bind_textdomain_codeset', dependencies: libintl_deps, prefix: libintl_prefix)
 else
   # using proxy-libintl fallback
-  libintl = dependency('intl', allow_fallback: true)
-  assert(libintl.type_name() == 'internal')
+  proxy_libintl = dependency('proxy-libintl', method: 'pkg-config', required: false)
+  if proxy_libintl.found()
+    libintl = proxy_libintl
+  else
+    libintl = subproject('proxy-libintl').get_variable('intl_dep')
+  endif
+
   libintl_deps = [libintl]
   have_bind_textdomain_codeset = true  # proxy-libintl supports it
 endif
