@@ -2283,7 +2283,14 @@ endif
 # implementations. This could be extended if issues are found in some platforms.
 libintl_deps = []
 libintl_prefix = '#include <libintl.h>'
-libintl = dependency('intl', required: false)
+
+# On Apple platforms, in intl is found as a dependency, it will cause
+# linking problems, so avoid it alltogether.
+if host_system in ['darwin', 'ios']
+  libintl = disabler()
+else
+  libintl = dependency('intl', required: false)
+endif
 if libintl.found() and libintl.type_name() != 'internal'
   # libintl supports different threading APIs, which may not
   # require additional flags, but it defaults to using pthreads if
