@@ -28,6 +28,9 @@
 #include <glib/gdatetime.h>
 #include <glib/gerror.h>
 #include <time.h>
+#ifndef G_OS_WIN32
+#include <sys/types.h>
+#endif
 
 G_BEGIN_DECLS
 
