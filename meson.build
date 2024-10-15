@@ -63,6 +63,11 @@ if cc.get_id() == 'msvc'
   # Disable SAFESEH with MSVC for plugins and libs that use external deps that
   # are built with MinGW
   noseh_link_args = ['/SAFESEH:NO']
+
+  if get_option('default_library') == 'static'
+    # Force Synchronous PDB Writes
+    add_project_arguments('/FS', language : 'c')
+  endif
 else
   noseh_link_args = []
   # -mms-bitfields vs -fnative-struct ?
