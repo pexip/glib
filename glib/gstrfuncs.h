@@ -58,39 +58,39 @@ typedef enum {
 
 GLIB_VAR const guint16 * const g_ascii_table;
 
-#define g_ascii_isalnum(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_ALNUM) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isalnum(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isalpha(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_ALPHA) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isalpha(gchar c) G_GNUC_CONST;
 
-#define g_ascii_iscntrl(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_CNTRL) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_iscntrl(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isdigit(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_DIGIT) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isdigit(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isgraph(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_GRAPH) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isgraph(gchar c) G_GNUC_CONST;
 
-#define g_ascii_islower(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_LOWER) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_islower(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isprint(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_PRINT) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isprint(gchar c) G_GNUC_CONST;
 
-#define g_ascii_ispunct(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_PUNCT) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_ispunct(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isspace(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_SPACE) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isspace(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isupper(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_UPPER) != 0)
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isupper(gchar c) G_GNUC_CONST;
 
-#define g_ascii_isxdigit(c) \
-  ((g_ascii_table[(guchar) (c)] & G_ASCII_XDIGIT) != 0)
-
+GLIB_AVAILABLE_IN_ALL
+gboolean g_ascii_isxdigit(gchar c) G_GNUC_CONST;
+ 
 GLIB_AVAILABLE_IN_ALL
 gchar                 g_ascii_tolower  (gchar        c) G_GNUC_CONST;
 GLIB_AVAILABLE_IN_ALL
