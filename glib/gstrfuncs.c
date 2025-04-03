@@ -319,6 +319,72 @@ static const guint16 ascii_table_data[256] = {
 
 const guint16 * const g_ascii_table = ascii_table_data;
 
+gboolean
+g_ascii_isalnum (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_ALNUM) != 0;
+}
+
+gboolean
+g_ascii_isalpha (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_ALPHA) != 0;
+}
+
+gboolean
+g_ascii_iscntrl (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_CNTRL) != 0;
+}
+
+gboolean
+g_ascii_isdigit (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_DIGIT) != 0;
+}
+
+gboolean
+g_ascii_isgraph (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_GRAPH) != 0;
+}
+
+gboolean
+g_ascii_islower (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_LOWER) != 0;
+}
+
+gboolean
+g_ascii_isprint (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_PRINT) != 0;
+}
+
+gboolean
+g_ascii_ispunct (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_PUNCT) != 0;
+}
+
+gboolean
+g_ascii_isspace (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_SPACE) != 0;
+}
+
+gboolean
+g_ascii_isupper (gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_UPPER) != 0;
+}
+
+gboolean
+g_ascii_isxdigit(gchar c)
+{
+  return (g_ascii_table[(guchar) (c)] & G_ASCII_XDIGIT) != 0;
+}
+
 #if defined(HAVE_NEWLOCALE) && \
     defined(HAVE_USELOCALE)
 #define USE_XLOCALE 1
