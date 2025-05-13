@@ -835,7 +835,8 @@ g_error_free (GError *error)
   ErrorDomainInfo *info;
   guint8 *allocated;
 
-  g_return_if_fail (error != NULL);
+  if (error == NULL)
+  	return;
 
   g_rw_lock_reader_lock (&error_domain_global);
   info = error_domain_lookup (error->domain);
