@@ -38,6 +38,10 @@
 #include "gsocketaddress.h"
 #include "gsrvtarget.h"
 
+#ifdef __ANDROID__
+  #include <android/multinetwork.h>
+#endif
+
 
 G_DEFINE_TYPE (GThreadedResolver, g_threaded_resolver, G_TYPE_RESOLVER)
 
@@ -1123,7 +1127,13 @@ do_lookup_records (GTask         *task,
 #if defined(HAVE_RES_NQUERY)
       len = res_nquery (&res, lrd->rrname, C_IN, rrtype, answer->data, answer->len);
 #else
+      #ifdef __ANDROID__
+      int fd = android_res_nquery(0, lrd->rrname, C_IN, rrtype, 0);
+      int rcode = 0;
+      len = android_res_nresult(fd, &rcode, answer->data, answer->len);
+      #else
       len = res_query (lrd->rrname, C_IN, rrtype, answer->data, answer->len);
+      #endif
 #endif
 
       /* If answer fit in the buffer then we're done */
