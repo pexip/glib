@@ -875,6 +875,8 @@ else
   gio_dtrace_hdr = []
 endif
 
+android_dep = cc.find_library('android', required: host_system == 'android')
+
 libgio = library('gio-2.0',
   gioenumtypes_h, gioenumtypes_c, gnetworking_h, gio_sources,
   gio_dtrace_hdr, gio_dtrace_obj,
@@ -888,7 +890,7 @@ libgio = library('gio-2.0',
   dependencies : [libz_dep, libdl_dep, libmount_dep, libglib_dep,
                   libgobject_dep, libgmodule_dep, selinux_dep, xattr_dep,
                   platform_deps, network_libs, libsysprof_capture_dep,
-                  gioenumtypes_dep, gvdb_dep],
+                  gioenumtypes_dep, gvdb_dep, android_dep],
   c_args : [gio_c_args, gio_c_args_internal],
   objc_args : [gio_c_args, gio_c_args_internal],
   gnu_symbol_visibility : 'hidden',

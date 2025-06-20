@@ -45,6 +45,10 @@
 #include <ifaddrs.h>
 #endif
 
+#ifdef __ANDROID__
+#include <android/multinetwork.h>
+#endif
+
 /*
  * GThreadedResolver is a threaded wrapper around the system libc’s
  * `getaddrinfo()`.
@@ -97,6 +101,7 @@ struct _GThreadedResolver
   gboolean monitor_supports_caching;
   int network_is_loopback_only;
 };
+
 
 G_DEFINE_TYPE (GThreadedResolver, g_threaded_resolver, G_TYPE_RESOLVER)
 
@@ -1398,6 +1403,10 @@ do_lookup_records (const gchar          *rrname,
   gint herr;
   GByteArray *answer;
   gint rrtype;
+#ifdef __ANDROID__
+  int fd;
+  int rcode = 0;
+#endif
 
 #ifdef HAVE_RES_NQUERY
   /* Load the resolver state. This is done once per worker thread, and the
@@ -1429,7 +1438,13 @@ do_lookup_records (const gchar          *rrname,
 #if defined(HAVE_RES_NQUERY)
       len = res_nquery (&res, rrname, C_IN, rrtype, answer->data, answer->len);
 #else
+  #ifdef __ANDROID__
+      fd = android_res_nquery(0, rrname, C_IN, rrtype, 0);
+      rcode = 0;
+      len = android_res_nresult(fd, &rcode, answer->data, answer->len);
+  #else
       len = res_query (rrname, C_IN, rrtype, answer->data, answer->len);
+  #endif
 #endif
 
       /* If answer fit in the buffer then we're done */
