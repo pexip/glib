@@ -1119,6 +1119,10 @@ do_lookup_records (GTask         *task,
     }
 #endif
 
+#ifdef __ANDROID__
+  int fd;
+  int rcode = 0;
+#endif
   rrtype = g_resolver_record_type_to_rrtype (lrd->record_type);
   answer = g_byte_array_new ();
   for (;;)
@@ -1128,8 +1132,8 @@ do_lookup_records (GTask         *task,
       len = res_nquery (&res, lrd->rrname, C_IN, rrtype, answer->data, answer->len);
 #else
       #ifdef __ANDROID__
-      int fd = android_res_nquery(0, lrd->rrname, C_IN, rrtype, 0);
-      int rcode = 0;
+      fd = android_res_nquery(0, lrd->rrname, C_IN, rrtype, 0);
+      rcode = 0;
       len = android_res_nresult(fd, &rcode, answer->data, answer->len);
       #else
       len = res_query (lrd->rrname, C_IN, rrtype, answer->data, answer->len);
