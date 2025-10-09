@@ -2356,7 +2356,7 @@ gi_typelib_new_from_bytes (GBytes *bytes,
   if (!validate_header_basic (data, len, error))
     return NULL;
 
-  meta = g_slice_new0 (GITypelib);
+  meta = g_new0 (GITypelib, 1);
   g_atomic_ref_count_init (&meta->ref_count);
   meta->bytes = g_bytes_ref (bytes);
   meta->data = data;
@@ -2411,7 +2411,7 @@ gi_typelib_unref (GITypelib *typelib)
           g_list_foreach (typelib->modules, (GFunc) (void *) g_module_close, NULL);
           g_list_free (typelib->modules);
         }
-      g_slice_free (GITypelib, typelib);
+      g_free (typelib);
     }
 }
 

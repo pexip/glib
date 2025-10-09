@@ -194,7 +194,7 @@ static const char *find_attribute (const char  *name,
 GIIrParser *
 gi_ir_parser_new (void)
 {
-  GIIrParser *parser = g_slice_new0 (GIIrParser);
+  GIIrParser *parser = g_new0 (GIIrParser, 1);
   const char *gi_gir_path = g_getenv ("GI_GIR_PATH");
 
   if (gi_gir_path != NULL)
@@ -219,7 +219,7 @@ gi_ir_parser_free (GIIrParser *parser)
 
   g_clear_list (&parser->parsed_modules, (GDestroyNotify) gi_ir_module_free);
 
-  g_slice_free (GIIrParser, parser);
+  g_free (parser);
 }
 
 void

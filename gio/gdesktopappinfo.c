@@ -826,7 +826,7 @@ free_mime_tweaks (gpointer data)
   g_strfreev (tweaks->removals);
   g_strfreev (tweaks->defaults);
 
-  g_slice_free (UnindexedMimeTweaks, tweaks);
+  g_free (tweaks);
 }
 
 static UnindexedMimeTweaks *
@@ -841,7 +841,7 @@ desktop_file_dir_unindexed_get_tweaks (DesktopFileDir *dir,
 
   if (tweaks == NULL)
     {
-      tweaks = g_slice_new0 (UnindexedMimeTweaks);
+      tweaks = g_new0 (UnindexedMimeTweaks, 1);
       g_hash_table_insert (dir->mime_tweaks, unaliased_type, tweaks);
     }
   else
@@ -1118,7 +1118,7 @@ memory_index_entry_free (gpointer data)
     {
       MemoryIndexEntry *next = mie->next;
 
-      g_slice_free (MemoryIndexEntry, mie);
+      g_free (mie);
       mie = next;
     }
 }
@@ -1132,7 +1132,7 @@ memory_index_add_token (MemoryIndex *mi,
 {
   MemoryIndexEntry *mie, *first;
 
-  mie = g_slice_new (MemoryIndexEntry);
+  mie = g_new (MemoryIndexEntry, 1);
   mie->app_name = app_name;
   mie->match_category = match_category;
   mie->token_pos = token_pos;

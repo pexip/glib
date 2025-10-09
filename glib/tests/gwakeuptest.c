@@ -154,7 +154,7 @@ dispatch_token (struct token *token)
     }
   else
     {
-      g_slice_free (struct token, token);
+      g_free (token);
 
       if (g_atomic_int_dec_and_test (&tokens_alive))
         g_wakeup_signal (last_token_wakeup);
@@ -166,7 +166,7 @@ token_new (int ttl)
 {
   struct token *token;
 
-  token = g_slice_new (struct token);
+  token = g_new (struct token, 1);
   token->ttl = ttl;
 
   g_atomic_int_inc (&tokens_alive);

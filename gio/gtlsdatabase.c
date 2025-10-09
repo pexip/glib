@@ -128,7 +128,7 @@ async_verify_chain_free (gpointer data)
   g_free (args->purpose);
   g_clear_object (&args->identity);
   g_clear_object (&args->interaction);
-  g_slice_free (AsyncVerifyChain, args);
+  g_free (args);
 }
 
 static void
@@ -169,7 +169,7 @@ g_tls_database_real_verify_chain_async (GTlsDatabase           *self,
   GTask *task;
   AsyncVerifyChain *args;
 
-  args = g_slice_new0 (AsyncVerifyChain);
+  args = g_new0 (AsyncVerifyChain, 1);
   args->chain = g_object_ref (chain);
   args->purpose = g_strdup (purpose);
   args->identity = identity ? g_object_ref (identity) : NULL;
@@ -213,7 +213,7 @@ async_lookup_certificate_for_handle_free (gpointer data)
 
   g_free (args->handle);
   g_clear_object (&args->interaction);
-  g_slice_free (AsyncLookupCertificateForHandle, args);
+  g_free (args);
 }
 
 static void
@@ -250,7 +250,7 @@ g_tls_database_real_lookup_certificate_for_handle_async (GTlsDatabase           
   GTask *task;
   AsyncLookupCertificateForHandle *args;
 
-  args = g_slice_new0 (AsyncLookupCertificateForHandle);
+  args = g_new0 (AsyncLookupCertificateForHandle, 1);
   args->handle = g_strdup (handle);
   args->interaction = interaction ? g_object_ref (interaction) : NULL;
 
@@ -287,7 +287,7 @@ async_lookup_certificate_issuer_free (gpointer data)
 
   g_clear_object (&args->certificate);
   g_clear_object (&args->interaction);
-  g_slice_free (AsyncLookupCertificateIssuer, args);
+  g_free (args);
 }
 
 static void
@@ -324,7 +324,7 @@ g_tls_database_real_lookup_certificate_issuer_async (GTlsDatabase           *sel
   GTask *task;
   AsyncLookupCertificateIssuer *args;
 
-  args = g_slice_new0 (AsyncLookupCertificateIssuer);
+  args = g_new0 (AsyncLookupCertificateIssuer, 1);
   args->certificate = g_object_ref (certificate);
   args->flags = flags;
   args->interaction = interaction ? g_object_ref (interaction) : NULL;
@@ -361,7 +361,7 @@ async_lookup_certificates_issued_by_free (gpointer data)
 
   g_byte_array_unref (args->issuer);
   g_clear_object (&args->interaction);
-  g_slice_free (AsyncLookupCertificatesIssuedBy, args);
+  g_free (args);
 }
 
 static void
@@ -406,7 +406,7 @@ g_tls_database_real_lookup_certificates_issued_by_async (GTlsDatabase           
   GTask *task;
   AsyncLookupCertificatesIssuedBy *args;
 
-  args = g_slice_new0 (AsyncLookupCertificatesIssuedBy);
+  args = g_new0 (AsyncLookupCertificatesIssuedBy, 1);
   args->issuer = g_byte_array_ref (issuer);
   args->flags = flags;
   args->interaction = interaction ? g_object_ref (interaction) : NULL;

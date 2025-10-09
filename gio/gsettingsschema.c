@@ -239,7 +239,7 @@ g_settings_schema_source_unref (GSettingsSchemaSource *source)
           g_free (source->text_tables);
         }
 
-      g_slice_free (GSettingsSchemaSource, source);
+      g_free (source);
     }
 }
 
@@ -301,7 +301,7 @@ g_settings_schema_source_new_from_directory (const gchar            *directory,
   if (table == NULL)
     return NULL;
 
-  source = g_slice_new (GSettingsSchemaSource);
+  source = g_new (GSettingsSchemaSource, 1);
   source->directory = g_strdup (directory);
   source->parent = parent ? g_settings_schema_source_ref (parent) : NULL;
   source->text_tables = NULL;
@@ -445,7 +445,7 @@ g_settings_schema_source_lookup (GSettingsSchemaSource *source,
   if (table == NULL)
     return NULL;
 
-  schema = g_slice_new0 (GSettingsSchema);
+  schema = g_new0 (GSettingsSchema, 1);
   schema->source = g_settings_schema_source_ref (source);
   schema->ref_count = 1;
   schema->id = g_strdup (schema_id);
@@ -949,7 +949,7 @@ g_settings_schema_unref (GSettingsSchema *schema)
       g_free (schema->items);
       g_free (schema->id);
 
-      g_slice_free (GSettingsSchema, schema);
+      g_free (schema);
     }
 }
 
@@ -1643,7 +1643,7 @@ g_settings_schema_key_unref (GSettingsSchemaKey *key)
     {
       g_settings_schema_key_clear (key);
 
-      g_slice_free (GSettingsSchemaKey, key);
+      g_free (key);
     }
 }
 
@@ -1670,7 +1670,7 @@ g_settings_schema_get_key (GSettingsSchema *schema,
   g_return_val_if_fail (schema != NULL, NULL);
   g_return_val_if_fail (name != NULL, NULL);
 
-  key = g_slice_new (GSettingsSchemaKey);
+  key = g_new (GSettingsSchemaKey, 1);
   g_settings_schema_key_init (key, schema, name);
   key->ref_count = 1;
 

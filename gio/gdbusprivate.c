@@ -121,7 +121,7 @@ typedef struct
 static void
 read_with_control_data_free (ReadWithControlData *data)
 {
-  g_slice_free (ReadWithControlData, data);
+  g_free (data);
 }
 
 static gboolean
@@ -179,7 +179,7 @@ _g_socket_read_with_control_messages (GSocket                 *socket,
   ReadWithControlData *data;
   GSource *source;
 
-  data = g_slice_new0 (ReadWithControlData);
+  data = g_new0 (ReadWithControlData, 1);
   data->buffer = buffer;
   data->count = count;
   data->messages = messages;
@@ -436,7 +436,7 @@ static void close_data_free (CloseData *close_data)
   g_clear_object (&close_data->task);
 
   _g_dbus_worker_unref (close_data->worker);
-  g_slice_free (CloseData, close_data);
+  g_free (close_data);
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
@@ -906,7 +906,7 @@ message_to_write_data_free (MessageToWriteData *data)
    * and finalised by now. */
   g_assert (data->task == NULL);
 
-  g_slice_free (MessageToWriteData, data);
+  g_free (data);
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
@@ -1653,7 +1653,7 @@ _g_dbus_worker_send_message (GDBusWorker    *worker,
   g_return_if_fail (blob != NULL);
   g_return_if_fail (blob_len > 16);
 
-  data = g_slice_new0 (MessageToWriteData);
+  data = g_new0 (MessageToWriteData, 1);
   data->worker = _g_dbus_worker_ref (worker);
   data->message = g_object_ref (message);
   data->blob = blob; /* steal! */
@@ -1734,7 +1734,7 @@ _g_dbus_worker_close (GDBusWorker         *worker,
 {
   CloseData *close_data;
 
-  close_data = g_slice_new0 (CloseData);
+  close_data = g_new0 (CloseData, 1);
   close_data->worker = _g_dbus_worker_ref (worker);
   close_data->task = (task == NULL ? NULL : g_object_ref (task));
 

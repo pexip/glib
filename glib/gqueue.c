@@ -29,7 +29,6 @@
 #include "gqueue.h"
 
 #include "gtestutils.h"
-#include "gslice.h"
 
 /**
  * g_queue_new:
@@ -41,7 +40,7 @@
 GQueue *
 g_queue_new (void)
 {
-  return g_slice_new0 (GQueue);
+  return g_new0 (GQueue, 1);
 }
 
 /**
@@ -61,7 +60,7 @@ g_queue_free (GQueue *queue)
   g_return_if_fail (queue != NULL);
 
   g_list_free (queue->head);
-  g_slice_free (GQueue, queue);
+  g_free (queue);
 }
 
 /**

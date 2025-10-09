@@ -66,7 +66,7 @@ struct _GITypelibHashBuilder {
 GITypelibHashBuilder *
 gi_typelib_hash_builder_new (void)
 {
-  GITypelibHashBuilder *builder = g_slice_new0 (GITypelibHashBuilder);
+  GITypelibHashBuilder *builder = g_new0 (GITypelibHashBuilder, 1);
   builder->c = NULL;
   builder->strings = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   return builder;
@@ -198,7 +198,7 @@ gi_typelib_hash_builder_destroy (GITypelibHashBuilder *builder)
       builder->c = NULL;
     }
   g_hash_table_destroy (builder->strings);
-  g_slice_free (GITypelibHashBuilder, builder);
+  g_free (builder);
 }
 
 uint16_t

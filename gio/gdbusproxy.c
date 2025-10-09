@@ -977,7 +977,7 @@ invalidated_property_get_cb (GDBusConnection *connection,
     g_variant_unref (value);
   g_object_unref (data->proxy);
   g_free (data->prop_name);
-  g_slice_free (InvalidatedPropGetData, data);
+  g_free (data);
 }
 
 static void
@@ -1054,7 +1054,7 @@ on_properties_changed (GDBusConnection *connection,
           for (n = 0; invalidated_properties[n] != NULL; n++)
             {
               InvalidatedPropGetData *data;
-              data = g_slice_new0 (InvalidatedPropGetData);
+              data = g_new0 (InvalidatedPropGetData, 1);
               data->proxy = g_object_ref (proxy);
               data->prop_name = g_strdup (invalidated_properties[n]);
               g_dbus_connection_call (proxy->priv->connection,
@@ -2516,7 +2516,7 @@ reply_data_free (ReplyData *data)
   if (data->fd_list != NULL)
     g_object_unref (data->fd_list);
 #endif
-  g_slice_free (ReplyData, data);
+  g_free (data);
 }
 
 static void
@@ -2549,7 +2549,7 @@ reply_cb (GDBusConnection *connection,
   else
     {
       ReplyData *data;
-      data = g_slice_new0 (ReplyData);
+      data = g_new0 (ReplyData, 1);
       data->value = value;
 #ifdef G_OS_UNIX
       data->fd_list = fd_list;

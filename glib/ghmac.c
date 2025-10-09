@@ -28,7 +28,6 @@
 
 #include "glib/galloca.h"
 #include "gatomic.h"
-#include "gslice.h"
 #include "gmem.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
@@ -129,7 +128,7 @@ g_hmac_new (GChecksumType  digest_type,
       g_return_val_if_reached (NULL);
     }
 
-  hmac = g_slice_new0 (GHmac);
+  hmac = g_new0 (GHmac, 1);
   hmac->ref_count = 1;
   hmac->digest_type = digest_type;
   hmac->digesti = checksum;
@@ -192,7 +191,7 @@ g_hmac_copy (const GHmac *hmac)
 
   g_return_val_if_fail (hmac != NULL, NULL);
 
-  copy = g_slice_new (GHmac);
+  copy = g_new (GHmac, 1);
   copy->ref_count = 1;
   copy->digest_type = hmac->digest_type;
   copy->digesti = g_checksum_copy (hmac->digesti);
@@ -245,7 +244,7 @@ g_hmac_unref (GHmac *hmac)
     {
       g_checksum_free (hmac->digesti);
       g_checksum_free (hmac->digesto);
-      g_slice_free (GHmac, hmac);
+      g_free (hmac);
     }
 }
 

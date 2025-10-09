@@ -1074,7 +1074,7 @@ g_data_input_stream_read_data_free (gpointer user_data)
   GDataInputStreamReadData *data = user_data;
 
   g_free (data->stop_chars);
-  g_slice_free (GDataInputStreamReadData, data);
+  g_free (data);
 }
 
 static void
@@ -1090,7 +1090,7 @@ g_data_input_stream_read_async (GDataInputStream    *stream,
   GTask *task;
   gsize stop_chars_len_unsigned;
 
-  data = g_slice_new0 (GDataInputStreamReadData);
+  data = g_new0 (GDataInputStreamReadData, 1);
 
   if (stop_chars_len < 0)
     stop_chars_len_unsigned = strlen (stop_chars);

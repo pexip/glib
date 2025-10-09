@@ -139,7 +139,7 @@ g_wakeup_new (void)
   GError *error = NULL;
   GWakeup *wakeup;
 
-  wakeup = g_slice_new (GWakeup);
+  wakeup = g_new (GWakeup, 1);
 
   /* try eventfd first, if we think we can */
 #if defined (HAVE_EVENTFD)
@@ -285,7 +285,7 @@ g_wakeup_free (GWakeup *wakeup)
   if (wakeup->fds[1] != -1)
     close (wakeup->fds[1]);
 
-  g_slice_free (GWakeup, wakeup);
+  g_free (wakeup);
 }
 
 #endif /* !_WIN32 */

@@ -551,7 +551,7 @@ g_action_group_exporter_free (GActionGroupExporter *exporter)
   g_object_unref (exporter->action_group);
   g_free (exporter->object_path);
 
-  g_slice_free (GActionGroupExporter, exporter);
+  g_free (exporter);
 }
 
 /**
@@ -612,7 +612,7 @@ g_dbus_connection_export_action_group (GDBusConnection  *connection,
       g_dbus_node_info_unref (info);
     }
 
-  exporter = g_slice_new (GActionGroupExporter);
+  exporter = g_new (GActionGroupExporter, 1);
   exporter->context = g_main_context_ref_thread_default ();
   exporter->pending_changes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   exporter->pending_source = NULL;

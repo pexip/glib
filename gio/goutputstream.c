@@ -1114,7 +1114,7 @@ typedef struct
 static void
 free_async_write_all (gpointer data)
 {
-  g_slice_free (AsyncWriteAll, data);
+  g_free (data);
 }
 
 static void
@@ -1222,7 +1222,7 @@ g_output_stream_write_all_async (GOutputStream       *stream,
   g_return_if_fail (buffer != NULL || count == 0);
 
   task = g_task_new (stream, cancellable, callback, user_data);
-  data = g_slice_new0 (AsyncWriteAll);
+  data = g_new0 (AsyncWriteAll, 1);
   data->buffer = buffer;
   data->to_write = count;
 
@@ -1406,7 +1406,7 @@ typedef struct
 static void
 free_async_writev_all (gpointer data)
 {
-  g_slice_free (AsyncWritevAll, data);
+  g_free (data);
 }
 
 static void
@@ -1531,7 +1531,7 @@ g_output_stream_writev_all_async (GOutputStream       *stream,
   g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
 
   task = g_task_new (stream, cancellable, callback, user_data);
-  data = g_slice_new0 (AsyncWritevAll);
+  data = g_new0 (AsyncWritevAll, 1);
   data->vectors = vectors;
   data->n_vectors = n_vectors;
 
@@ -2393,7 +2393,7 @@ typedef struct {
 static void
 free_write_data (WriteData *op)
 {
-  g_slice_free (WriteData, op);
+  g_free (op);
 }
 
 static void
@@ -2476,7 +2476,7 @@ g_output_stream_real_write_async (GOutputStream       *stream,
   GTask *task;
   WriteData *op;
 
-  op = g_slice_new0 (WriteData);
+  op = g_new0 (WriteData, 1);
   task = g_task_new (stream, cancellable, callback, user_data);
   g_task_set_check_cancellable (task, FALSE);
   g_task_set_task_data (task, op, (GDestroyNotify) free_write_data);
@@ -2509,7 +2509,7 @@ typedef struct {
 static void
 free_writev_data (WritevData *op)
 {
-  g_slice_free (WritevData, op);
+  g_free (op);
 }
 
 static void
@@ -2609,7 +2609,7 @@ g_output_stream_real_writev_async (GOutputStream        *stream,
   WritevData *op;
   GError *error = NULL;
 
-  op = g_slice_new0 (WritevData);
+  op = g_new0 (WritevData, 1);
   task = g_task_new (stream, cancellable, callback, user_data);
   op->vectors = vectors;
   op->n_vectors = n_vectors;

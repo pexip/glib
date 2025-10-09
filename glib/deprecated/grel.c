@@ -41,7 +41,6 @@
 #include <glib/gmessages.h>
 #include <glib/gtestutils.h>
 #include <glib/gstring.h>
-#include <glib/gslice.h>
 #include <glib/ghash.h>
 
 #include <stdarg.h>
@@ -219,7 +218,7 @@ relation_delete_value_tuple (gpointer tuple_key,
 {
   GRelation *relation = user_data;
   gpointer *tuple = tuple_value;
-  g_slice_free1 (relation->fields * sizeof (gpointer), tuple);
+  g_free (tuple);
 }
 
 static void
@@ -300,7 +299,7 @@ void
 g_relation_insert (GRelation   *relation,
 		   ...)
 {
-  gpointer* tuple = g_slice_alloc (relation->fields * sizeof (gpointer));
+  gpointer* tuple = g_malloc (relation->fields * sizeof (gpointer));
   va_list args;
   
   va_start (args, relation);
@@ -369,7 +368,7 @@ g_relation_delete_tuple (gpointer tuple_key,
     }
   
   if (g_hash_table_remove (relation->all_tuples, tuple))
-    g_slice_free1 (relation->fields * sizeof (gpointer), tuple);
+    g_free (tuple);
   
   relation->count -= 1;
 }
@@ -561,7 +560,7 @@ g_relation_count (GRelation     *relation,
 gboolean
 g_relation_exists (GRelation   *relation, ...)
 {
-  gpointer *tuple = g_slice_alloc (relation->fields * sizeof (gpointer));
+  gpointer *tuple = g_malloc (relation->fields * sizeof (gpointer));
   va_list args;
   gboolean result;
   
@@ -574,7 +573,7 @@ g_relation_exists (GRelation   *relation, ...)
   
   result = g_hash_table_lookup (relation->all_tuples, tuple) != NULL;
   
-  g_slice_free1 (relation->fields * sizeof (gpointer), tuple);
+  g_free (tuple);
   
   return result;
 }

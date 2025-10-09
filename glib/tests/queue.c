@@ -1071,7 +1071,7 @@ new_item (int x)
 {
   QueueItem *item;
 
-  item = g_slice_new (QueueItem);
+  item = g_new (QueueItem, 1);
   item->freed = FALSE;
   item->x = x;
 
@@ -1106,10 +1106,10 @@ test_clear_full (void)
   g_assert_true (g_queue_is_empty (queue));
   check_integrity (queue);
 
-  g_slice_free (QueueItem, one);
-  g_slice_free (QueueItem, two);
-  g_slice_free (QueueItem, three);
-  g_slice_free (QueueItem, four);
+  g_free (one);
+  g_free (two);
+  g_free (three);
+  g_free (four);
   g_queue_free (queue);
 }
 
@@ -1138,10 +1138,10 @@ test_clear_full_noop (void)
   g_assert_true (g_queue_is_empty (queue));
   check_integrity (queue);
 
-  g_slice_free (QueueItem, one);
-  g_slice_free (QueueItem, two);
-  g_slice_free (QueueItem, three);
-  g_slice_free (QueueItem, four);
+  g_free (one);
+  g_free (two);
+  g_free (three);
+  g_free (four);
   g_queue_free (queue);
 }
 
@@ -1250,9 +1250,9 @@ test_free_full (void)
   g_assert_true (one->freed);
   g_assert_true (two->freed);
   g_assert_true (three->freed);
-  g_slice_free (QueueItem, one);
-  g_slice_free (QueueItem, two);
-  g_slice_free (QueueItem, three);
+  g_free (one);
+  g_free (two);
+  g_free (three);
 }
 
 static void

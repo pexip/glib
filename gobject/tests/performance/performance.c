@@ -579,7 +579,7 @@ test_construction_run1 (PerformanceTest *test,
 
   n_objects = data->n_objects;
   for (unsigned int i = 0; i < n_objects; i++)
-    objects[i] = (GObject *) g_slice_new0 (SimpleObject);
+    objects[i] = (GObject *) g_new0 (SimpleObject, 1);
 }
 
 static void
@@ -649,7 +649,7 @@ test_construction_finish1 (PerformanceTest *test,
   struct ConstructionTest *data = _data;
 
   for (unsigned int i = 0; i < data->n_objects; i++)
-    g_slice_free (SimpleObject, (SimpleObject *)data->objects[i]);
+    g_free (data->objects[i]);
 }
 
 static void

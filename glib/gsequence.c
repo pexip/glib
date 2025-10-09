@@ -24,7 +24,6 @@
 
 #include "gmem.h"
 #include "gtestutils.h"
-#include "gslice.h"
 
 /**
  * GSequenceIter:
@@ -1573,7 +1572,7 @@ find_root (GSequenceNode *node)
 static GSequenceNode *
 node_new (gpointer data)
 {
-  GSequenceNode *node = g_slice_new0 (GSequenceNode);
+  GSequenceNode *node = g_new0 (GSequenceNode, 1);
 
   /*
    * Make a random number quickly. Some binary magic is used to avoid
@@ -1836,7 +1835,7 @@ real_node_free (GSequenceNode *node,
       if (seq && seq->data_destroy_notify && node != seq->end_node)
         seq->data_destroy_notify (node->data);
 
-      g_slice_free (GSequenceNode, node);
+      g_free (node);
     }
 }
 

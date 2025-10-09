@@ -1703,7 +1703,7 @@ free_candidate (struct NamespaceVersionCandidadate *candidate)
   g_mapped_file_unref (candidate->mfile);
   g_free (candidate->path);
   g_free (candidate->version);
-  g_slice_free (struct NamespaceVersionCandidadate, candidate);
+  g_free (candidate);
 }
 
 static GSList *
@@ -1788,7 +1788,7 @@ enumerate_namespace_versions (const char         *namespace,
               g_clear_error (&error);
               continue;
             }
-          candidate = g_slice_new0 (struct NamespaceVersionCandidadate);
+          candidate = g_new0 (struct NamespaceVersionCandidadate, 1);
           candidate->mfile = mfile;
           candidate->path_index = index;
           candidate->path = path;
@@ -1834,7 +1834,7 @@ find_namespace_latest (const char          *namespace,
       result = elected->mfile;
       *path_ret = elected->path;
       *version_ret = elected->version;
-      g_slice_free (struct NamespaceVersionCandidadate, elected); /* just free the container */
+      g_free (elected); /* just free the container */
       g_slist_foreach (candidates, (GFunc) (void *) free_candidate, NULL);
       g_slist_free (candidates);
     }

@@ -246,7 +246,7 @@ main (int   argc,
 
   g_test_init (&argc, &argv, NULL);
 
-  data = g_slice_new (SetupData);
+  data = g_new (SetupData, 1);
 
   /* test closing asynchronously without flushing manually */
   g_test_add ("/close-async/without-flush",
@@ -272,7 +272,7 @@ main (int   argc,
               test_with_async_flush,
               teardown_data);
 
-  g_slice_free (SetupData, data);
+  g_free (data);
 
   return g_test_run();
 }

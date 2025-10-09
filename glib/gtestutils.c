@@ -64,7 +64,6 @@
 #include "grand.h"
 #include "gstrfuncs.h"
 #include "gtimer.h"
-#include "gslice.h"
 #include "gspawn.h"
 #include "glib-private.h"
 #include "gutilsprivate.h"
@@ -2466,7 +2465,7 @@ g_test_create_case (const char       *test_name,
   g_return_val_if_fail (test_name[0] != 0, NULL);
   g_return_val_if_fail (data_test != NULL, NULL);
 
-  tc = g_slice_new0 (GTestCase);
+  tc = g_new0 (GTestCase, 1);
   tc->name = g_strdup (test_name);
   tc->test_data = (gpointer) test_data;
   tc->fixture_size = data_size;
@@ -2952,7 +2951,7 @@ g_test_create_suite (const char *suite_name)
   g_return_val_if_fail (suite_name != NULL, NULL);
   g_return_val_if_fail (strchr (suite_name, '/') == NULL, NULL);
   g_return_val_if_fail (suite_name[0] != 0, NULL);
-  ts = g_slice_new0 (GTestSuite);
+  ts = g_new0 (GTestSuite, 1);
   ts->name = g_strdup (suite_name);
   return ts;
 }
@@ -3037,7 +3036,7 @@ g_test_queue_destroy (GDestroyNotify destroy_func,
 
   g_return_if_fail (destroy_func != NULL);
 
-  dentry = g_slice_new0 (DestroyEntry);
+  dentry = g_new0 (DestroyEntry, 1);
   dentry->destroy_func = destroy_func;
   dentry->destroy_data = destroy_data;
   dentry->next = test_destroy_queue;
@@ -3125,7 +3124,7 @@ test_case_run (GTestCase  *tc,
                   DestroyEntry *dentry = test_destroy_queue;
                   test_destroy_queue = dentry->next;
                   dentry->destroy_func (dentry->destroy_data);
-                  g_slice_free (DestroyEntry, dentry);
+                  g_free (dentry);
                 }
               if (tc->fixture_teardown)
                 tc->fixture_teardown (fixture, tc->test_data);
@@ -3340,7 +3339,7 @@ g_test_case_free (GTestCase *test_case)
     test_case->fixture_teardown (test_case->test_data, test_case->test_data);
 
   g_free (test_case->name);
-  g_slice_free (GTestCase, test_case);
+  g_free (test_case);
 }
 
 /**
@@ -3360,7 +3359,7 @@ g_test_suite_free (GTestSuite *suite)
 
   g_slist_free_full (suite->suites, (GDestroyNotify)g_test_suite_free);
 
-  g_slice_free (GTestSuite, suite);
+  g_free (suite);
 }
 
 static void
@@ -3447,8 +3446,8 @@ g_assertion_message (const char     *domain,
    * core dump */
   if (__glib_assert_msg != NULL)
     /* free the old one */
-    free (__glib_assert_msg);
-  __glib_assert_msg = (char*) malloc (strlen (s) + 1);
+    g_free (__glib_assert_msg);
+  __glib_assert_msg = (char*) g_malloc (strlen (s) + 1);
   strcpy (__glib_assert_msg, s);
 
   g_free (s);

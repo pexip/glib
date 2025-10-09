@@ -313,7 +313,7 @@ free_connect_data (ConnectAsyncData *data)
 {
   g_object_unref (data->io_stream);
   g_object_unref (data->proxy_address);
-  g_slice_free (ConnectAsyncData, data);
+  g_free (data);
 }
 
 static void
@@ -347,7 +347,7 @@ g_http_proxy_connect_async (GProxy              *proxy,
   ConnectAsyncData *data;
   GTask *task;
 
-  data = g_slice_new0 (ConnectAsyncData);
+  data = g_new0 (ConnectAsyncData, 1);
   data->io_stream = g_object_ref (io_stream);
   data->proxy_address = g_object_ref (proxy_address);
 

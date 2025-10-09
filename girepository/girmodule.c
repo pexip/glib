@@ -54,7 +54,7 @@ gi_ir_module_new (const char *name,
 {
   GIIrModule *module;
 
-  module = g_slice_new0 (GIIrModule);
+  module = g_new0 (GIIrModule, 1);
 
   module->name = g_strdup (name);
   module->version = g_strdup (version);
@@ -91,7 +91,7 @@ gi_ir_module_free (GIIrModule *module)
   g_hash_table_destroy (module->pointer_structures);
   g_hash_table_destroy (module->disguised_structures);
 
-  g_slice_free (GIIrModule, module);
+  g_free (module);
 }
 
 /**
