@@ -29,7 +29,6 @@
 #include <glib/gvariant-core.h>
 #include <glib/gtestutils.h>
 #include <glib/gstrfuncs.h>
-#include <glib/gslice.h>
 #include <glib/ghash.h>
 #include <glib/gmem.h>
 
@@ -2965,7 +2964,7 @@ g_variant_iter_new (GVariant *value)
 {
   GVariantIter *iter;
 
-  iter = (GVariantIter *) g_slice_new (struct heap_iter);
+  iter = (GVariantIter *) g_new (struct heap_iter, 1);
   GVHI(iter)->value_ref = g_variant_ref (value);
   GVHI(iter)->magic = GVHI_MAGIC;
 
@@ -3075,7 +3074,7 @@ g_variant_iter_free (GVariantIter *iter)
   g_variant_unref (GVHI(iter)->value_ref);
   GVHI(iter)->magic = 0;
 
-  g_slice_free (struct heap_iter, GVHI(iter));
+  g_free (GVHI(iter));
 }
 
 /**
@@ -3268,7 +3267,7 @@ g_variant_builder_new (const GVariantType *type)
 {
   GVariantBuilder *builder;
 
-  builder = (GVariantBuilder *) g_slice_new (struct heap_builder);
+  builder = (GVariantBuilder *) g_new (struct heap_builder, 1);
   g_variant_builder_init (builder, type);
   GVHB(builder)->magic = GVHB_MAGIC;
   GVHB(builder)->ref_count = 1;
@@ -3301,7 +3300,7 @@ g_variant_builder_unref (GVariantBuilder *builder)
   g_variant_builder_clear (builder);
   GVHB(builder)->magic = 0;
 
-  g_slice_free (struct heap_builder, GVHB(builder));
+  g_free (GVHB(builder));
 }
 
 /**
@@ -3369,7 +3368,7 @@ g_variant_builder_clear (GVariantBuilder *builder)
   if (GVSB(builder)->parent)
     {
       g_variant_builder_clear (GVSB(builder)->parent);
-      g_slice_free (GVariantBuilder, GVSB(builder)->parent);
+      g_free (GVSB(builder)->parent);
     }
 
   memset (builder, 0, sizeof (GVariantBuilder));
@@ -3621,7 +3620,8 @@ g_variant_builder_open (GVariantBuilder    *builder,
                     g_variant_type_is_subtype_of (GVSB(builder)->prev_item_type,
                                                   type));
 
-  parent = g_slice_dup (GVariantBuilder, builder);
+  parent = g_new (GVariantBuilder, 1);
+  memcpy (parent, builder, sizeof (GVariantBuilder));
   g_variant_builder_init (builder, type);
   GVSB(builder)->parent = parent;
 
@@ -3667,7 +3667,7 @@ g_variant_builder_close (GVariantBuilder *builder)
   g_variant_builder_add_value (parent, g_variant_builder_end (builder));
   *builder = *parent;
 
-  g_slice_free (GVariantBuilder, parent);
+  g_free (parent);
 }
 
 /*< private >
@@ -3957,7 +3957,7 @@ g_variant_dict_new (GVariant *from_asv)
 {
   GVariantDict *dict;
 
-  dict = g_slice_alloc (sizeof (struct heap_dict));
+  dict = g_malloc (sizeof (struct heap_dict));
   g_variant_dict_init (dict, from_asv);
   GVHD(dict)->magic = GVHD_MAGIC;
   GVHD(dict)->ref_count = 1;
@@ -4309,7 +4309,7 @@ g_variant_dict_unref (GVariantDict *dict)
   if (--GVHD(dict)->ref_count == 0)
     {
       g_variant_dict_clear (dict);
-      g_slice_free (struct heap_dict, (struct heap_dict *) dict);
+      g_free ((struct heap_dict *) dict);
     }
 }
 

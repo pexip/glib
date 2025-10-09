@@ -29,7 +29,6 @@
 #include <glib/gatomic.h>
 #include <glib/gslist.h>
 #include <glib/gthread.h>
-#include <glib/gslice.h>
 
 #include "gthreadprivate.h"
 
@@ -138,7 +137,7 @@ g_futex_wait (const gint *address,
 
       if ((waiter = g_futex_find_address (address)) == NULL)
         {
-          waiter = g_slice_new (WaitAddress);
+          waiter = g_new (WaitAddress, 1);
           waiter->address = address;
           g_cond_init (&waiter->wait_queue);
           waiter->ref_count = 0;
@@ -154,7 +153,7 @@ g_futex_wait (const gint *address,
           g_futex_address_list =
             g_slist_remove (g_futex_address_list, waiter);
           g_cond_clear (&waiter->wait_queue);
-          g_slice_free (WaitAddress, waiter);
+          g_free (waiter);
         }
     }
   g_mutex_unlock (&g_futex_mutex);

@@ -634,7 +634,7 @@ G_DEFINE_QUARK (g-key-file-error-quark, g_key_file_error)
 static void
 g_key_file_init (GKeyFile *key_file)
 {  
-  key_file->current_group = g_slice_new0 (GKeyFileGroup);
+  key_file->current_group = g_new0 (GKeyFileGroup, 1);
   key_file->groups = g_list_prepend (NULL, key_file->current_group);
   key_file->group_hash = NULL;
   key_file->start_group = NULL;
@@ -696,7 +696,7 @@ g_key_file_new (void)
 {
   GKeyFile *key_file;
 
-  key_file = g_slice_new0 (GKeyFile);
+  key_file = g_new0 (GKeyFile, 1);
   key_file->ref_count = 1;
   g_key_file_init (key_file);
 
@@ -1201,7 +1201,7 @@ g_key_file_free (GKeyFile *key_file)
   g_key_file_clear (key_file);
 
   if (g_atomic_int_dec_and_test (&key_file->ref_count))
-    g_slice_free (GKeyFile, key_file);
+    g_free (key_file);
   else
     g_key_file_init (key_file);
 }
@@ -1223,7 +1223,7 @@ g_key_file_unref (GKeyFile *key_file)
   if (g_atomic_int_dec_and_test (&key_file->ref_count))
     {
       g_key_file_clear (key_file);
-      g_slice_free (GKeyFile, key_file);
+      g_free (key_file);
     }
 }
 
@@ -1313,7 +1313,7 @@ g_key_file_parse_comment (GKeyFile     *key_file,
   
   g_warn_if_fail (key_file->current_group != NULL);
 
-  pair = g_slice_new (GKeyFileKeyValuePair);
+  pair = g_new (GKeyFileKeyValuePair, 1);
   pair->key = NULL;
   pair->value = g_strndup (line, length);
   
@@ -1438,7 +1438,7 @@ g_key_file_parse_key_value_pair (GKeyFile     *key_file,
     {
       GKeyFileKeyValuePair *pair;
 
-      pair = g_slice_new (GKeyFileKeyValuePair);
+      pair = g_new (GKeyFileKeyValuePair, 1);
       pair->key = g_steal_pointer (&key);
       pair->value = g_strndup (value_start, value_len);
 
@@ -3335,7 +3335,7 @@ g_key_file_set_key_comment (GKeyFile     *key_file,
 
   /* Now we can add our new comment
    */
-  pair = g_slice_new (GKeyFileKeyValuePair);
+  pair = g_new (GKeyFileKeyValuePair, 1);
   pair->key = NULL;
   pair->value = g_key_file_parse_comment_as_value (key_file, comment);
   
@@ -3379,7 +3379,7 @@ g_key_file_set_group_comment (GKeyFile     *key_file,
 
   /* Now we can add our new comment
    */
-  group->comment = g_slice_new (GKeyFileKeyValuePair);
+  group->comment = g_new (GKeyFileKeyValuePair, 1);
   group->comment->key = NULL;
   group->comment->value = g_key_file_parse_comment_as_value (key_file, comment);
 
@@ -3412,7 +3412,7 @@ g_key_file_set_top_comment (GKeyFile     *key_file,
   if (comment == NULL)
      return TRUE;
 
-  pair = g_slice_new (GKeyFileKeyValuePair);
+  pair = g_new (GKeyFileKeyValuePair, 1);
   pair->key = NULL;
   pair->value = g_key_file_parse_comment_as_value (key_file, comment);
   
@@ -3839,7 +3839,7 @@ g_key_file_add_group (GKeyFile    *key_file,
       return;
     }
 
-  group = g_slice_new0 (GKeyFileGroup);
+  group = g_new0 (GKeyFileGroup, 1);
   group->name = g_strdup (group_name);
   group->lookup_map = g_hash_table_new (g_str_hash, g_str_equal);
   key_file->groups = g_list_prepend (key_file->groups, group);
@@ -3861,7 +3861,7 @@ g_key_file_key_value_pair_free (GKeyFileKeyValuePair *pair)
     {
       g_free (pair->key);
       g_free (pair->value);
-      g_slice_free (GKeyFileKeyValuePair, pair);
+      g_free (pair);
     }
 }
 
@@ -3970,7 +3970,7 @@ g_key_file_remove_group_node (GKeyFile *key_file,
     }
 
   g_free ((gchar *) group->name);
-  g_slice_free (GKeyFileGroup, group);
+  g_free (group);
   g_list_free_1 (group_node);
 }
 
@@ -4030,7 +4030,7 @@ g_key_file_add_key (GKeyFile      *key_file,
 {
   GKeyFileKeyValuePair *pair;
 
-  pair = g_slice_new (GKeyFileKeyValuePair);
+  pair = g_new (GKeyFileKeyValuePair, 1);
   pair->key = g_strdup (key);
   pair->value = g_strdup (value);
 

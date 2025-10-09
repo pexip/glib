@@ -67,7 +67,7 @@ g_io_job_free (GIOSchedulerJob *job)
   if (job->cancellable)
     g_object_unref (job->cancellable);
   g_main_context_unref (job->context);
-  g_slice_free (GIOSchedulerJob, job);
+  g_free (job);
 }
 
 static void
@@ -124,7 +124,7 @@ g_io_scheduler_push_job (GIOSchedulerJobFunc  job_func,
 
   g_return_if_fail (job_func != NULL);
 
-  job = g_slice_new0 (GIOSchedulerJob);
+  job = g_new0 (GIOSchedulerJob, 1);
   job->job_func = job_func;
   job->data = user_data;
   job->destroy_notify = notify;

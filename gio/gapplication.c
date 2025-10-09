@@ -407,7 +407,7 @@ free_option_entry (gpointer data)
   /* ...except for the space that we allocated for it ourselves */
   g_free (entry->arg_data);
 
-  g_slice_free (GOptionEntry, entry);
+  g_free (entry);
 }
 
 static void
@@ -613,6 +613,8 @@ static void
 add_packed_option (GApplication *application,
                    GOptionEntry *entry)
 {
+  GOptionEntry *entry_copy;
+
   switch (entry->arg)
     {
     case G_OPTION_ARG_NONE:
@@ -646,9 +648,11 @@ add_packed_option (GApplication *application,
   if (!application->priv->packed_options)
     application->priv->packed_options = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_option_entry);
 
+  entry_copy = g_new (GOptionEntry, 1);
+  memcpy (entry_copy, entry, sizeof (GOptionEntry));
   g_hash_table_insert (application->priv->packed_options,
                        g_strdup (entry->long_name),
-                       g_slice_dup (GOptionEntry, entry));
+                       entry_copy);
 }
 
 /**
@@ -3019,7 +3023,7 @@ g_application_busy_binding_destroy (gpointer  data,
     g_application_unmark_busy (binding->app);
 
   g_object_unref (binding->app);
-  g_slice_free (GApplicationBusyBinding, binding);
+  g_free (binding);
 }
 
 static void
@@ -3083,7 +3087,7 @@ g_application_bind_busy_property (GApplication *application,
       return;
     }
 
-  binding = g_slice_new (GApplicationBusyBinding);
+  binding = g_new (GApplicationBusyBinding, 1);
   binding->app = g_object_ref (application);
   binding->is_busy = FALSE;
 

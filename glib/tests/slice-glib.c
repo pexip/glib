@@ -89,31 +89,31 @@ test_sliced_mem_thread (gpointer data)
     ss[i] = quick_rand32() % prime_size;
   /* allocate number_of_blocks blocks */
   for (i = 0; i < number_of_blocks; i++)
-    ps[i] = g_slice_alloc (ss[i] + corruption());
+    ps[i] = g_malloc (ss[i] + corruption());
   for (j = 0; j < number_of_repetitions; j++)
     {
       /* free number_of_blocks/2 blocks */
       for (i = 0; i < number_of_blocks; i += 2)
-        g_slice_free1 (ss[i] + corruption(), ps[i] + corruption());
+        g_free (ps[i] + corruption());
       /* allocate number_of_blocks/2 blocks with new sizes */
       for (i = 0; i < number_of_blocks; i += 2)
         {
           ss[i] = quick_rand32() % prime_size;
-          ps[i] = g_slice_alloc (ss[i] + corruption());
+          ps[i] = g_malloc (ss[i] + corruption());
         }
     }
   /* free number_of_blocks blocks */
   for (i = 0; i < number_of_blocks; i++)
-    g_slice_free1 (ss[i] + corruption(), ps[i] + corruption());
+    g_free (ps[i] + corruption());
   /* alloc and free many equally sized chunks in a row */
   for (i = 0; i < number_of_repetitions; i++)
     {
       guint sz = quick_rand32() % prime_size;
       guint k = number_of_blocks / 100;
       for (j = 0; j < k; j++)
-        ps[j] = g_slice_alloc (sz + corruption());
+        ps[j] = g_malloc (sz + corruption());
       for (j = 0; j < k; j++)
-        g_slice_free1 (sz + corruption(), ps[j] + corruption());
+        g_free (ps[j] + corruption());
     }
   g_free (ps);
   g_free (ss);
@@ -143,9 +143,6 @@ int
 main (int   argc,
       char *argv[])
 {
-  g_slice_set_config (G_SLICE_CONFIG_ALWAYS_MALLOC, FALSE);
-  g_slice_set_config (G_SLICE_CONFIG_BYPASS_MAGAZINES, FALSE);
-
   g_test_init (&argc, &argv, NULL);
 
   g_test_add_func ("/slice/glib", test_slice_glib);

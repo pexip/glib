@@ -30,7 +30,6 @@
 #include "gmarkup.h"
 
 #include "gatomic.h"
-#include "gslice.h"
 #include "galloca.h"
 #include "gstrfuncs.h"
 #include "gstring.h"
@@ -913,7 +912,7 @@ pop_subparser_stack (GMarkupParseContext *context)
   context->user_data = tracker->prev_user_data;
   context->parser = tracker->prev_parser;
   context->subparser_element = tracker->prev_element;
-  g_slice_free (GMarkupRecursionTracker, tracker);
+  g_free (tracker);
 
   context->subparser_stack = g_slist_delete_link (context->subparser_stack,
                                                   context->subparser_stack);
@@ -2129,7 +2128,7 @@ g_markup_parse_context_push (GMarkupParseContext *context,
 {
   GMarkupRecursionTracker *tracker;
 
-  tracker = g_slice_new (GMarkupRecursionTracker);
+  tracker = g_new (GMarkupRecursionTracker, 1);
   tracker->prev_element = context->subparser_element;
   tracker->prev_parser = context->parser;
   tracker->prev_user_data = context->user_data;

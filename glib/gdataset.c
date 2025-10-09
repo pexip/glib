@@ -38,7 +38,6 @@
 #include "gdataset.h"
 #include "gbitlock.h"
 
-#include "gslice.h"
 #include "gdatasetprivate.h"
 #include "ghash.h"
 #include "gquark.h"
@@ -310,7 +309,7 @@ g_dataset_destroy_internal (GDataset *dataset)
 	  if (dataset == g_dataset_cached)
 	    g_dataset_cached = NULL;
 	  g_hash_table_remove (g_dataset_location_ht, dataset_location);
-	  g_slice_free (GDataset, dataset);
+	  g_free (dataset);
 	  break;
 	}
       
@@ -664,7 +663,7 @@ g_dataset_id_set_data_full (gconstpointer  dataset_location,
   dataset = g_dataset_lookup (dataset_location);
   if (!dataset)
     {
-      dataset = g_slice_new (GDataset);
+      dataset = g_new (GDataset, 1);
       dataset->location = dataset_location;
       g_datalist_init (&dataset->datalist);
       g_hash_table_insert (g_dataset_location_ht, 

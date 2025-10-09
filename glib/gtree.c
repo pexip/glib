@@ -34,7 +34,6 @@
 
 #include "gatomic.h"
 #include "gtestutils.h"
-#include "gslice.h"
 
 /**
  * SECTION:trees-binary
@@ -135,7 +134,7 @@ static GTreeNode*
 g_tree_node_new (gpointer key,
                  gpointer value)
 {
-  GTreeNode *node = g_slice_new (GTreeNode);
+  GTreeNode *node = g_new (GTreeNode, 1);
 
   node->balance = 0;
   node->left = NULL;
@@ -216,7 +215,7 @@ g_tree_new_full (GCompareDataFunc key_compare_func,
   
   g_return_val_if_fail (key_compare_func != NULL, NULL);
   
-  tree = g_slice_new (GTree);
+  tree = g_new (GTree, 1);
   tree->root               = NULL;
   tree->key_compare        = key_compare_func;
   tree->key_destroy_func   = key_destroy_func;
@@ -367,7 +366,7 @@ g_tree_remove_all (GTree *tree)
         tree->key_destroy_func (node->key);
       if (tree->value_destroy_func)
         tree->value_destroy_func (node->value);
-      g_slice_free (GTreeNode, node);
+      g_free (node);
 
 #ifdef G_TREE_DEBUG
       g_assert (tree->nnodes > 0);
@@ -430,7 +429,7 @@ g_tree_unref (GTree *tree)
   if (g_atomic_int_dec_and_test (&tree->ref_count))
     {
       g_tree_remove_all (tree);
-      g_slice_free (GTree, tree);
+      g_free (tree);
     }
 }
 
@@ -970,7 +969,7 @@ g_tree_remove_internal (GTree         *tree,
         tree->value_destroy_func (node->value);
     }
 
-  g_slice_free (GTreeNode, node);
+  g_free (node);
 
   tree->nnodes--;
 

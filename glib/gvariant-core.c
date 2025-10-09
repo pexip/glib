@@ -28,7 +28,6 @@
 #include <glib/gbitlock.h>
 #include <glib/gatomic.h>
 #include <glib/gbytes.h>
-#include <glib/gslice.h>
 #include <glib/gmem.h>
 #include <glib/grefcount.h>
 #include <string.h>
@@ -485,7 +484,7 @@ g_variant_alloc (const GVariantType *type,
 {
   GVariant *value;
 
-  value = g_slice_new (GVariant);
+  value = g_new (GVariant, 1);
   value->type_info = g_variant_type_info_get (type);
   value->state = (serialised ? STATE_SERIALISED : 0) |
                  (trusted ? STATE_TRUSTED : 0) |
@@ -715,7 +714,7 @@ g_variant_unref (GVariant *value)
         g_variant_release_children (value);
 
       memset (value, 0, sizeof (GVariant));
-      g_slice_free (GVariant, value);
+      g_free (value);
     }
 }
 
@@ -1114,7 +1113,7 @@ g_variant_get_child_value (GVariant *value,
       }
 
     /* create a new serialized instance out of it */
-    child = g_slice_new (GVariant);
+    child = g_new (GVariant, 1);
     child->type_info = s_child.type_info;
     child->state = (value->state & STATE_TRUSTED) |
                    STATE_SERIALISED;

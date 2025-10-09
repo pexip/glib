@@ -38,7 +38,6 @@
 #include "gstrfuncs.h"
 #include "gatomic.h"
 #include "gtestutils.h"
-#include "gslice.h"
 #include "grefcount.h"
 #include "gvalgrind.h"
 
@@ -1070,7 +1069,7 @@ g_hash_table_new_full (GHashFunc      hash_func,
 {
   GHashTable *hash_table;
 
-  hash_table = g_slice_new (GHashTable);
+  hash_table = g_new (GHashTable, 1);
   g_atomic_ref_count_init (&hash_table->ref_count);
   hash_table->nnodes             = 0;
   hash_table->noccupied          = 0;
@@ -1492,7 +1491,7 @@ g_hash_table_unref (GHashTable *hash_table)
         g_free (hash_table->values);
       g_free (hash_table->keys);
       g_free (hash_table->hashes);
-      g_slice_free (GHashTable, hash_table);
+      g_free (hash_table);
     }
 }
 

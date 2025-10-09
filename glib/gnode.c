@@ -35,8 +35,6 @@
 
 #include "gnode.h"
 
-#include "gslice.h"
-
 #include "gtestutils.h"
 
 /**
@@ -91,8 +89,8 @@
  * The #GNode struct represents one node in a [n-ary tree][glib-N-ary-Trees].
  **/
 
-#define g_node_alloc0()         g_slice_new0 (GNode)
-#define g_node_free(node)       g_slice_free (GNode, node)
+#define g_node_alloc0()         g_new0 (GNode, 1)
+#define g_node_free(node)       g_free (node)
 
 /* --- functions --- */
 /**

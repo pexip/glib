@@ -37,7 +37,6 @@
 
 #include "gbytes.h"
 #include "ghash.h"
-#include "gslice.h"
 #include "gmem.h"
 #include "gtestutils.h"
 #include "gthread.h"
@@ -270,7 +269,7 @@ g_array_sized_new (gboolean zero_terminated,
   g_return_val_if_fail (elt_size <= G_MAXSIZE / 2 - 1, NULL);
 #endif
 
-  array = g_slice_new (GRealArray);
+  array = g_new (GRealArray, 1);
 
   array->data            = NULL;
   array->len             = 0;
@@ -483,7 +482,7 @@ array_free (GRealArray     *array,
     }
   else
     {
-      g_slice_free1 (sizeof (GRealArray), array);
+      g_free (array);
     }
 
   return segment;
@@ -1105,7 +1104,7 @@ ptr_array_new (guint reserved_size,
 {
   GRealPtrArray *array;
 
-  array = g_slice_new (GRealPtrArray);
+  array = g_new (GRealPtrArray, 1);
 
   array->pdata = NULL;
   array->len = 0;
@@ -1609,7 +1608,7 @@ ptr_array_free (GPtrArray      *array,
     }
   else
     {
-      g_slice_free1 (sizeof (GRealPtrArray), rarray);
+      g_free (rarray);
     }
 
   return segment;

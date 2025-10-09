@@ -1114,7 +1114,7 @@ static void
 free_skip_async_data (gpointer _data)
 {
   SkipAsyncData *data = _data;
-  g_slice_free (SkipAsyncData, data);
+  g_free (data);
 }
 
 static void
@@ -1214,7 +1214,7 @@ g_buffered_input_stream_skip_async (GInputStream        *stream,
   bstream = G_BUFFERED_INPUT_STREAM (stream);
   priv = bstream->priv;
 
-  data = g_slice_new (SkipAsyncData);
+  data = g_new (SkipAsyncData, 1);
   data->bytes_skipped = 0;
   task = g_task_new (stream, cancellable, callback, user_data);
   g_task_set_source_tag (task, g_buffered_input_stream_skip_async);

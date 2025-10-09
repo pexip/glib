@@ -1007,7 +1007,7 @@ tree_matchlet_free (TreeMatchlet *matchlet)
   g_list_free_full (matchlet->matches, (GDestroyNotify) tree_matchlet_free);
   g_free (matchlet->path);
   g_free (matchlet->mimetype);
-  g_slice_free (TreeMatchlet, matchlet);
+  g_free (matchlet);
 }
 
 static void
@@ -1015,7 +1015,7 @@ tree_match_free (TreeMatch *match)
 {
   g_list_free_full (match->matches, (GDestroyNotify) tree_matchlet_free);
   g_free (match->contenttype);
-  g_slice_free (TreeMatch, match);
+  g_free (match);
 }
 
 static TreeMatch *
@@ -1035,7 +1035,7 @@ parse_header (gchar *line)
   if (s == NULL)
     return NULL;
 
-  match = g_slice_new0 (TreeMatch);
+  match = g_new0 (TreeMatch, 1);
   match->priority = atoi (line + 1);
   match->contenttype = g_strdup (s + 1);
 
@@ -1051,7 +1051,7 @@ parse_match_line (gchar *line,
   gchar **parts;
   gint i;
 
-  matchlet = g_slice_new0 (TreeMatchlet);
+  matchlet = g_new0 (TreeMatchlet, 1);
 
   if (line[0] == '>')
     {
@@ -1101,7 +1101,7 @@ parse_match_line (gchar *line,
   return matchlet;
 
 handle_error:
-  g_slice_free (TreeMatchlet, matchlet);
+  g_free (matchlet);
   return NULL;
 }
 

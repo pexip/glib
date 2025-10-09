@@ -168,7 +168,7 @@ g_settings_backend_watch_weak_notify (gpointer  data,
 
         *ptr = tmp->next;
         g_weak_ref_clear (&tmp->target);
-        g_slice_free (GSettingsBackendWatch, tmp);
+        g_free (tmp);
 
         g_mutex_unlock (&backend->priv->lock);
         return;
@@ -242,7 +242,7 @@ g_settings_backend_watch (GSettingsBackend              *backend,
    * avoid some of the pain that would be associated with that.
    */
 
-  watch = g_slice_new (GSettingsBackendWatch);
+  watch = g_new (GSettingsBackendWatch, 1);
   watch->context = context;
   watch->vtable = vtable;
   g_weak_ref_init (&watch->target, target);
@@ -282,7 +282,7 @@ g_settings_backend_invoke_closure (gpointer user_data)
   g_strfreev (closure->names);
   g_free (closure->name);
 
-  g_slice_free (GSettingsBackendClosure, closure);
+  g_free (closure);
 
   return FALSE;
 }
@@ -315,7 +315,7 @@ g_settings_backend_dispatch_signal (GSettingsBackend    *backend,
       if (!target)
         continue;
 
-      closure = g_slice_new (GSettingsBackendClosure);
+      closure = g_new (GSettingsBackendClosure, 1);
       closure->context = watch->context;
       if (closure->context)
         g_main_context_ref (closure->context);
