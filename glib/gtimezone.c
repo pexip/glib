@@ -36,7 +36,6 @@
 #include "ghash.h"
 #include "gthread.h"
 #include "gbytes.h"
-#include "gslice.h"
 #include "gdatetime.h"
 #include "gdate.h"
 #include "genviron.h"
@@ -256,7 +255,7 @@ again:
         g_array_free (tz->transitions, TRUE);
       g_free (tz->name);
 
-      g_slice_free (GTimeZone, tz);
+      g_free (tz);
     }
 
   else if G_UNLIKELY (!g_atomic_int_compare_and_exchange (&tz->ref_count,
@@ -1712,7 +1711,7 @@ parse_footertz (const gchar *footer, size_t footerlen)
   g_free (tzstring);
   if (rules_num > 1)
     {
-      footertz = g_slice_new0 (GTimeZone);
+      footertz = g_new0 (GTimeZone, 1);
       init_zone_from_rules (footertz, rules, rules_num, NULL);
       footertz->ref_count++;
     }
@@ -1880,7 +1879,7 @@ g_time_zone_new_identifier (const gchar *identifier)
         }
     }
 
-  tz = g_slice_new0 (GTimeZone);
+  tz = g_new0 (GTimeZone, 1);
   tz->ref_count = 0;
 
   zone_for_constant_offset (tz, identifier);
@@ -1945,7 +1944,7 @@ g_time_zone_new_identifier (const gchar *identifier)
   /* Failed to load the timezone. */
   if (tz->t_info == NULL)
     {
-      g_slice_free (GTimeZone, tz);
+      g_free (tz);
 
       if (identifier)
         G_UNLOCK (time_zones);

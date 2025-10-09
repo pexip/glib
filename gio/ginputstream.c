@@ -708,7 +708,7 @@ typedef struct
 static void
 free_async_read_all (gpointer data)
 {
-  g_slice_free (AsyncReadAll, data);
+  g_free (data);
 }
 
 static void
@@ -814,7 +814,7 @@ g_input_stream_read_all_async (GInputStream        *stream,
   g_return_if_fail (buffer != NULL || count == 0);
 
   task = g_task_new (stream, cancellable, callback, user_data);
-  data = g_slice_new0 (AsyncReadAll);
+  data = g_new0 (AsyncReadAll, 1);
   data->buffer = buffer;
   data->to_read = count;
 
@@ -1329,7 +1329,7 @@ typedef struct {
 static void
 free_read_data (ReadData *op)
 {
-  g_slice_free (ReadData, op);
+  g_free (op);
 }
 
 static void
@@ -1417,7 +1417,7 @@ g_input_stream_real_read_async (GInputStream        *stream,
   GTask *task;
   ReadData *op;
   
-  op = g_slice_new0 (ReadData);
+  op = g_new0 (ReadData, 1);
   task = g_task_new (stream, cancellable, callback, user_data);
   g_task_set_source_tag (task, g_input_stream_real_read_async);
   g_task_set_task_data (task, op, (GDestroyNotify) free_read_data);

@@ -236,7 +236,7 @@ lazy_binding_free (gpointer data)
       g_clear_pointer (&lazy_binding->transform_from, g_closure_unref);
     }
 
-  g_slice_free (LazyBinding, lazy_binding);
+  g_free (lazy_binding);
 }
 
 static void
@@ -520,7 +520,7 @@ g_binding_group_bind_helper (GBindingGroup  *self,
 
   g_mutex_lock (&self->mutex);
 
-  lazy_binding = g_slice_new0 (LazyBinding);
+  lazy_binding = g_new0 (LazyBinding, 1);
   lazy_binding->group = self;
   lazy_binding->source_property = g_intern_string (source_property);
   lazy_binding->target_property = g_intern_string (target_property);

@@ -77,7 +77,7 @@ freelist_alloc (gsize size, gboolean reuse)
     }
 
   real_size = sizeof (GAtomicArrayMetadata) + MAX (size, sizeof (FreeListNode));
-  mem = g_slice_alloc (real_size);
+  mem = g_malloc (real_size);
   mem = ((char *) mem) + sizeof (GAtomicArrayMetadata);
   G_ATOMIC_ARRAY_DATA_SIZE (mem) = size;
 

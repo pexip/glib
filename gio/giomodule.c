@@ -1650,7 +1650,7 @@ g_io_extension_point_implement (const char *extension_point_name,
 	return extension;
     }
   
-  extension = g_slice_new0 (GIOExtension);
+  extension = g_new0 (GIOExtension, 1);
   extension->type = type;
   extension->name = g_strdup (extension_name);
   extension->priority = priority;

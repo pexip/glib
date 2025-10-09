@@ -493,7 +493,7 @@ signal_handler_free (gpointer data)
   handler->signal_id = 0;
   handler->signal_detail = 0;
   g_clear_pointer (&handler->closure, g_closure_unref);
-  g_slice_free (SignalHandler, handler);
+  g_free (handler);
 }
 
 static void
@@ -732,7 +732,7 @@ g_signal_group_connect_closure_ (GSignalGroup   *self,
       return FALSE;
     }
 
-  handler = g_slice_new0 (SignalHandler);
+  handler = g_new0 (SignalHandler, 1);
   handler->group = self;
   handler->signal_id = signal_id;
   handler->signal_detail = signal_detail;

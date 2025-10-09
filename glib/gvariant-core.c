@@ -29,7 +29,6 @@
 #include <glib/gbitlock.h>
 #include <glib/gatomic.h>
 #include <glib/gbytes.h>
-#include <glib/gslice.h>
 #include <glib/gmem.h>
 #include <glib/grefcount.h>
 #include <string.h>

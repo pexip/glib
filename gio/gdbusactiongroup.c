@@ -88,7 +88,7 @@ action_info_free (gpointer user_data)
   if (info->parameter_type)
     g_variant_type_free (info->parameter_type);
 
-  g_slice_free (ActionInfo, info);
+  g_free (info);
 }
 
 static ActionInfo *
@@ -104,7 +104,7 @@ action_info_new_from_iter (GVariantIter *iter)
                             &enabled, &param_str, &state))
     return NULL;
 
-  info = g_slice_new (ActionInfo);
+  info = g_new (ActionInfo, 1);
   info->name = name;
   info->enabled = enabled;
 

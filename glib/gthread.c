@@ -61,7 +61,6 @@
 #include <windows.h>
 #endif /* G_OS_WIN32 */
 
-#include "gslice.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
 #include "glib_trace.h"
@@ -870,7 +869,7 @@ g_thread_unref (GThread *thread)
       if (real->ours)
         g_system_thread_free (real);
       else
-        g_slice_free (GRealThread, real);
+        g_free (real);
     }
 }
 
@@ -1104,7 +1103,7 @@ g_thread_self (void)
        * This can happen for the main thread and for threads
        * that are not created by GLib.
        */
-      thread = g_slice_new0 (GRealThread);
+      thread = g_new0 (GRealThread, 1);
       thread->ref_count = 1;
 
       g_private_set (&g_thread_specific_private, thread);

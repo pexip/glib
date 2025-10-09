@@ -59,7 +59,7 @@ ip_test_data_free (IPTestData *data)
   g_clear_pointer (&data->loop, g_main_loop_unref);
   g_clear_object (&data->cancellable);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static gpointer
@@ -141,7 +141,7 @@ create_server_full (GSocketFamily   family,
   GSocketAddress *addr;
   GInetAddress *iaddr;
 
-  data = g_slice_new0 (IPTestData);
+  data = g_new (IPTestData, 1);
   data->family = family;
 
   data->server = server = g_socket_new (family,
@@ -2089,7 +2089,7 @@ test_credentials_tcp_server (void)
   GSocket *sock = NULL;
   GCredentials *creds;
 
-  data = g_slice_new0 (IPTestData);
+  data = g_new0 (IPTestData, 1);
   data->family = family;
   data->server = server = g_socket_new (family,
 					G_SOCKET_TYPE_STREAM,

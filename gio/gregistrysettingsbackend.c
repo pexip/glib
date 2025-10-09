@@ -463,7 +463,7 @@ registry_cache_add_item (GNode         *parent,
   g_return_val_if_fail (name != NULL, NULL);
   g_return_val_if_fail (parent != NULL, NULL);
 
-  item = g_slice_new (RegistryCacheItem);
+  item = g_new (RegistryCacheItem, 1);
 
   /* Ref count should be the number of watch points above this node */
   item->ref_count = ref_count;
@@ -526,7 +526,7 @@ registry_cache_item_free (RegistryCacheItem *item)
 
   g_free (item->name);
   registry_value_free (item->value);
-  g_slice_free (RegistryCacheItem, item);
+  g_free (item);
 }
 
 /* Unreferencing has to be done bottom-up */
@@ -1624,7 +1624,7 @@ watch_handler (RegistryEvent *event)
   g_ptr_array_free (event->items, TRUE);
   g_free (event->prefix);
   g_object_unref (event->self);
-  g_slice_free (RegistryEvent, event);
+  g_free (event);
 
   return G_SOURCE_REMOVE;
 }
@@ -1880,7 +1880,7 @@ watch_thread_function (LPVOID parameter)
            * Working here rather than in the main thread is preferable because the UI is less
            * likely to block (only when changing notification subscriptions).
            */
-          event = g_slice_new (RegistryEvent);
+          event = g_new (RegistryEvent, 1);
           event->self = G_REGISTRY_SETTINGS_BACKEND (g_object_ref (self->owner));
           event->prefix = g_strdup (prefix);
           event->items = g_ptr_array_new_with_free_func (g_free);
@@ -1897,7 +1897,7 @@ watch_thread_function (LPVOID parameter)
               g_object_unref (event->self);
               g_free (event->prefix);
               g_ptr_array_free (event->items, TRUE);
-              g_slice_free (RegistryEvent, event);
+              g_free (event);
             }
         }
       else
@@ -1918,12 +1918,12 @@ watch_start (GRegistrySettingsBackend *self)
 
   g_return_val_if_fail (self->watch == NULL, FALSE);
 
-  watch = g_slice_new (WatchThreadState);
+  watch = g_new (WatchThreadState, 1);
   watch->owner = G_SETTINGS_BACKEND (self);
 
   watch->watches_remaining = MAX_WATCHES;
 
-  watch->message_lock = g_slice_new (CRITICAL_SECTION);
+  watch->message_lock = g_new (CRITICAL_SECTION, 1);
   InitializeCriticalSection (watch->message_lock);
   watch->message_sent_event = CreateEvent (NULL, FALSE, FALSE, NULL);
   watch->message_received_event = CreateEvent (NULL, FALSE, FALSE, NULL);
@@ -1947,12 +1947,12 @@ watch_start (GRegistrySettingsBackend *self)
 
 fail:
   DeleteCriticalSection (watch->message_lock);
-  g_slice_free (CRITICAL_SECTION, watch->message_lock);
+  g_free (watch->message_lock);
   if (watch->message_sent_event != NULL)
     CloseHandle (watch->message_sent_event);
   if (watch->message_received_event != NULL)
     CloseHandle (watch->message_received_event);
-  g_slice_free (WatchThreadState, watch);
+  g_free (watch);
 
   return FALSE;
 }
@@ -1983,11 +1983,11 @@ watch_stop_unlocked (GRegistrySettingsBackend *self)
 
   LeaveCriticalSection (watch->message_lock);
   DeleteCriticalSection (watch->message_lock);
-  g_slice_free (CRITICAL_SECTION, watch->message_lock);
+  g_free (watch->message_lock);
   CloseHandle (watch->message_sent_event);
   CloseHandle (watch->message_received_event);
   CloseHandle (watch->thread);
-  g_slice_free (WatchThreadState, watch);
+  g_free (watch);
 
   trace ("\nwatch thread: %x: all data freed.\n", self);
   self->watch = NULL;
@@ -2220,7 +2220,7 @@ g_registry_settings_backend_finalize (GObject *object)
   DeleteCriticalSection (&self->watch_lock);
 
   DeleteCriticalSection (self->cache_lock);
-  g_slice_free (CRITICAL_SECTION, self->cache_lock);
+  g_free (self->cache_lock);
 
   g_free (self->base_path);
   g_free (self->base_pathw);
@@ -2357,14 +2357,14 @@ g_registry_settings_backend_init (GRegistrySettingsBackend *self)
 {
   RegistryCacheItem *item;
 
-  item = g_slice_new (RegistryCacheItem);
+  item = g_new (RegistryCacheItem, 1);
   item->value.type = REG_NONE;
   item->value.ptr = NULL;
   item->name = g_strdup ("<root>");
   item->ref_count = 1;
   self->cache_root = g_node_new (item);
 
-  self->cache_lock = g_slice_new (CRITICAL_SECTION);
+  self->cache_lock = g_new (CRITICAL_SECTION, 1);
   InitializeCriticalSection (self->cache_lock);
 
   self->watch = NULL;

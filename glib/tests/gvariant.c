@@ -1155,7 +1155,7 @@ random_instance (GVariantTypeInfo *type_info)
 {
   RandomInstance *instance;
 
-  instance = g_slice_new (RandomInstance);
+  instance = g_new (RandomInstance, 1);
 
   if (type_info == NULL)
     {
@@ -1186,7 +1186,7 @@ static void
 random_instance_free (RandomInstance *instance)
 {
   g_variant_type_info_unref (instance->type_info);
-  g_slice_free (RandomInstance, instance);
+  g_free (instance);
 }
 
 static void
@@ -2018,7 +2018,7 @@ tree_instance_new (const GVariantType *type,
   if (type == NULL)
     type = mytype = make_random_definite_type (depth);
 
-  instance = g_slice_new (TreeInstance);
+  instance = g_new (TreeInstance, 1);
   instance->info = g_variant_type_info_get (type);
   instance->children = NULL;
   instance->n_children = 0;
@@ -2120,7 +2120,7 @@ tree_instance_free (TreeInstance *instance)
   for (i = 0; i < instance->n_children; i++)
     tree_instance_free (instance->children[i]);
   g_free (instance->children);
-  g_slice_free (TreeInstance, instance);
+  g_free (instance);
 }
 
 static gboolean i_am_writing_byteswapped;
