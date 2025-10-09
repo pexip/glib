@@ -327,13 +327,13 @@ g_vasprintf (gchar      **string,
   gint len;
   g_return_val_if_fail (string != NULL, -1);
 
-#if !defined(USE_SYSTEM_PRINTF)
+#if !defined(USE_SYSTEM_PRINTF) && !defined(HAVE_MIMALLOC)
 
   len = _g_gnulib_vasprintf (string, format, args);
   if (len < 0)
     *string = NULL;
 
-#elif defined (HAVE_VASPRINTF)
+#elif defined (HAVE_VASPRINTF) && !defined(HAVE_MIMALLOC)
 
   {
     int saved_errno;

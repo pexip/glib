@@ -127,3 +127,8 @@ option('multiarch',
        type : 'boolean',
        value : false,
        description : 'Install some helper executables in per-architecture locations')
+
+option('mimalloc',
+       type : 'feature',
+       value : 'auto',
+       description : 'build with mimalloc support')
