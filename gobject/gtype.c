@@ -1824,17 +1824,8 @@ type_iface_blow_holder_info_Wm (TypeNode *iface,
     }
 }
 
-/* We use the system allocator on UNIX-y systems, where we know we have
- * access to a decent allocator. On other systems, we fall back to the
- * slice allocator, as we know its performance profile
- */
-#ifdef G_OS_UNIX
 # define instance_alloc(s)  g_malloc0 ((s))
 # define instance_free(s,p) g_free ((p))
-#else
-# define instance_alloc(s)  g_slice_alloc0 ((s))
-# define instance_free(s,p) g_slice_free1 ((s),(p))
-#endif
 
 /**
  * g_type_create_instance: (skip)

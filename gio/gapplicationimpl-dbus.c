@@ -582,7 +582,7 @@ g_application_impl_destroy (GApplicationImpl *impl)
 
   g_free (impl->object_path);
 
-  g_slice_free (GApplicationImpl, impl);
+  g_free (impl);
 }
 
 GApplicationImpl *
@@ -599,7 +599,7 @@ g_application_impl_register (GApplication        *application,
 
   g_assert ((flags & G_APPLICATION_NON_UNIQUE) || appid != NULL);
 
-  impl = g_slice_new0 (GApplicationImpl);
+  impl = g_new0 (GApplicationImpl, 1);
 
   impl->app = application;
   impl->exported_actions = exported_actions;

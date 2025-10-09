@@ -18,7 +18,7 @@ my_boxed_copy (gpointer orig)
   MyBoxed *a = orig;
   MyBoxed *b;
 
-  b = g_slice_new (MyBoxed);
+  b = g_new (MyBoxed);
   b->ivalue = a->ivalue;
   b->bla = g_strdup (a->bla);
 
@@ -33,7 +33,7 @@ my_boxed_free (gpointer orig)
   MyBoxed *a = orig;
 
   g_free (a->bla);
-  g_slice_free (MyBoxed, a);
+  g_free (a);
 
   my_boxed_free_count++;
 }

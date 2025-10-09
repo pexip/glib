@@ -522,7 +522,7 @@ _kqsub_new (gchar *filename, gchar *basename, GKqueueFileMonitor *mon, GFileMoni
 {
   kqueue_sub *sub;
 
-  sub = g_slice_new (kqueue_sub);
+  sub = g_new (kqueue_sub, 1);
   sub->filename = filename;
   sub->basename = basename;
   sub->mon = mon;
@@ -544,7 +544,7 @@ _kqsub_free (kqueue_sub *sub)
   g_source_unref ((GSource *) sub->source);
   g_free (sub->filename);
   g_free (sub->basename);
-  g_slice_free (kqueue_sub, sub);
+  g_free (sub);
 }
 
 static void

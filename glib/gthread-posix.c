@@ -45,7 +45,6 @@
 
 #include "gmain.h"
 #include "gmessages.h"
-#include "gslice.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
 #include "gthreadprivate.h"
@@ -102,9 +101,9 @@ g_mutex_impl_new (void)
   pthread_mutexattr_t attr;
 #endif
 
-  mutex = malloc (sizeof (pthread_mutex_t));
+  mutex = g_malloc (sizeof (pthread_mutex_t));
   if G_UNLIKELY (mutex == NULL)
-    g_thread_abort (errno, "malloc");
+    g_thread_abort (errno, "g_malloc");
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
   pthread_mutexattr_init (&attr);
@@ -126,7 +125,7 @@ static void
 g_mutex_impl_free (pthread_mutex_t *mutex)
 {
   pthread_mutex_destroy (mutex);
-  free (mutex);
+  g_free (mutex);
 }
 
 static inline pthread_mutex_t *
@@ -283,9 +282,9 @@ g_rec_mutex_impl_new (void)
   pthread_mutexattr_t attr;
   pthread_mutex_t *mutex;
 
-  mutex = malloc (sizeof (pthread_mutex_t));
+  mutex = g_malloc (sizeof (pthread_mutex_t));
   if G_UNLIKELY (mutex == NULL)
-    g_thread_abort (errno, "malloc");
+    g_thread_abort (errno, "g_malloc");
 
   pthread_mutexattr_init (&attr);
   pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -299,7 +298,7 @@ static void
 g_rec_mutex_impl_free (pthread_mutex_t *mutex)
 {
   pthread_mutex_destroy (mutex);
-  free (mutex);
+  g_free (mutex);
 }
 
 static inline pthread_mutex_t *
@@ -445,9 +444,9 @@ g_rw_lock_impl_new (void)
   pthread_rwlock_t *rwlock;
   gint status;
 
-  rwlock = malloc (sizeof (pthread_rwlock_t));
+  rwlock = g_malloc (sizeof (pthread_rwlock_t));
   if G_UNLIKELY (rwlock == NULL)
-    g_thread_abort (errno, "malloc");
+    g_thread_abort (errno, "g_malloc");
 
   if G_UNLIKELY ((status = pthread_rwlock_init (rwlock, NULL)) != 0)
     g_thread_abort (status, "pthread_rwlock_init");
@@ -459,7 +458,7 @@ static void
 g_rw_lock_impl_free (pthread_rwlock_t *rwlock)
 {
   pthread_rwlock_destroy (rwlock);
-  free (rwlock);
+  g_free (rwlock);
 }
 
 static inline pthread_rwlock_t *
@@ -686,9 +685,9 @@ g_cond_impl_new (void)
 #error Cannot support GCond on your platform.
 #endif
 
-  cond = malloc (sizeof (pthread_cond_t));
+  cond = g_malloc (sizeof (pthread_cond_t));
   if G_UNLIKELY (cond == NULL)
-    g_thread_abort (errno, "malloc");
+    g_thread_abort (errno, "g_malloc");
 
   if G_UNLIKELY ((status = pthread_cond_init (cond, &attr)) != 0)
     g_thread_abort (status, "pthread_cond_init");
@@ -702,7 +701,7 @@ static void
 g_cond_impl_free (pthread_cond_t *cond)
 {
   pthread_cond_destroy (cond);
-  free (cond);
+  g_free (cond);
 }
 
 static inline pthread_cond_t *
@@ -1026,9 +1025,9 @@ g_private_impl_new (GDestroyNotify notify)
   pthread_key_t *key;
   gint status;
 
-  key = malloc (sizeof (pthread_key_t));
+  key = g_malloc (sizeof (pthread_key_t));
   if G_UNLIKELY (key == NULL)
-    g_thread_abort (errno, "malloc");
+    g_thread_abort (errno, "g_malloc");
   status = pthread_key_create (key, notify);
   if G_UNLIKELY (status != 0)
     g_thread_abort (status, "pthread_key_create");
@@ -1044,7 +1043,7 @@ g_private_impl_free (pthread_key_t *key)
   status = pthread_key_delete (*key);
   if G_UNLIKELY (status != 0)
     g_thread_abort (status, "pthread_key_delete");
-  free (key);
+  g_free (key);
 }
 
 static inline pthread_key_t *
@@ -1172,7 +1171,7 @@ g_system_thread_free (GRealThread *thread)
 
   g_mutex_clear (&pt->lock);
 
-  g_slice_free (GThreadPosix, pt);
+  g_free (pt);
 }
 
 gboolean
@@ -1285,7 +1284,7 @@ g_system_thread_new (GThreadFunc proxy,
   pthread_attr_t attr;
   gint ret;
 
-  thread = g_slice_new0 (GThreadPosix);
+  thread = g_new0 (GThreadPosix, 1);
   base_thread = (GRealThread*)thread;
   base_thread->ref_count = 2;
   base_thread->ours = TRUE;
@@ -1333,7 +1332,7 @@ g_system_thread_new (GThreadFunc proxy,
       g_set_error (error, G_THREAD_ERROR, G_THREAD_ERROR_AGAIN, 
                    "Error creating thread: %s", g_strerror (ret));
       g_free (thread->thread.name);
-      g_slice_free (GThreadPosix, thread);
+      g_free (thread);
       return NULL;
     }
 

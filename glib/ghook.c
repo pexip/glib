@@ -36,7 +36,6 @@
 #include "ghook.h"
 
 #include "gtestutils.h"
-#include "gslice.h"
 
 /**
  * SECTION:hooks
@@ -270,7 +269,7 @@ g_hook_alloc (GHookList *hook_list)
   g_return_val_if_fail (hook_list != NULL, NULL);
   g_return_val_if_fail (hook_list->is_setup, NULL);
   
-  hook = g_slice_alloc0 (hook_list->hook_size);
+  hook = g_malloc0 (hook_list->hook_size);
   hook->data = NULL;
   hook->next = NULL;
   hook->prev = NULL;
@@ -302,7 +301,7 @@ g_hook_free (GHookList *hook_list,
 
   if(hook_list->finalize_hook != NULL)
       hook_list->finalize_hook (hook_list, hook);
-  g_slice_free1 (hook_list->hook_size, hook);
+  g_free (hook);
 }
 
 /**

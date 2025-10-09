@@ -1899,7 +1899,7 @@ info_cache_free (InfoCacheEntry *cache)
   g_hash_table_unref (cache->method_name_to_data);
   g_hash_table_unref (cache->signal_name_to_data);
   g_hash_table_unref (cache->property_name_to_data);
-  g_slice_free (InfoCacheEntry, cache);
+  g_free (cache);
 }
 
 /* maps from GDBusInterfaceInfo* to InfoCacheEntry* */
@@ -2101,7 +2101,7 @@ g_dbus_interface_info_cache_build (GDBusInterfaceInfo *info)
       cache->use_count += 1;
       goto out;
     }
-  cache = g_slice_new0 (InfoCacheEntry);
+  cache = g_new0 (InfoCacheEntry, 1);
   cache->use_count = 1;
   cache->method_name_to_data = g_hash_table_new (g_str_hash, g_str_equal);
   cache->signal_name_to_data = g_hash_table_new (g_str_hash, g_str_equal);

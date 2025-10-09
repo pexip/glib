@@ -268,7 +268,7 @@ static void
 free_connect_data (ConnectAsyncData *data)
 {
   g_object_unref (data->io_stream);
-  g_slice_free (ConnectAsyncData, data);
+  g_free (data);
 }
 
 static void
@@ -314,7 +314,7 @@ g_socks4a_proxy_connect_async (GProxy               *proxy,
   guint16 port;
   const gchar *username;
 
-  data = g_slice_new0 (ConnectAsyncData);
+  data = g_new0 (ConnectAsyncData, 1);
   data->io_stream = g_object_ref (io_stream);
 
   task = g_task_new (proxy, cancellable, callback, user_data);

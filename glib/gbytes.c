@@ -28,7 +28,6 @@
 #include <glib/garray.h>
 #include <glib/gstrfuncs.h>
 #include <glib/gatomic.h>
-#include <glib/gslice.h>
 #include <glib/gtestutils.h>
 #include <glib/gmem.h>
 #include <glib/gmessages.h>
@@ -185,7 +184,7 @@ g_bytes_new_with_free_func (gconstpointer  data,
 
   g_return_val_if_fail (data != NULL || size == 0, NULL);
 
-  bytes = g_slice_new (GBytes);
+  bytes = g_new (GBytes, 1);
   bytes->data = data;
   bytes->size = size;
   bytes->free_func = free_func;
@@ -337,7 +336,7 @@ g_bytes_unref (GBytes *bytes)
     {
       if (bytes->free_func != NULL)
         bytes->free_func (bytes->user_data);
-      g_slice_free (GBytes, bytes);
+      g_free (bytes);
     }
 }
 
@@ -453,7 +452,7 @@ try_steal_and_unref (GBytes         *bytes,
     {
       *size = bytes->size;
       result = (gpointer)bytes->data;
-      g_slice_free (GBytes, bytes);
+      g_free (bytes);
       return result;
     }
 

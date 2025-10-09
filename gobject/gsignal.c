@@ -578,7 +578,7 @@ handler_match_prepend (HandlerMatch *list,
 {
   HandlerMatch *node;
   
-  node = g_slice_new (HandlerMatch);
+  node = g_new (HandlerMatch, 1);
   node->handler = handler;
   node->next = list;
   node->signal_id = signal_id;
@@ -593,7 +593,7 @@ handler_match_free1_R (HandlerMatch *node,
   HandlerMatch *next = node->next;
   
   handler_unref_R (node->signal_id, instance, node->handler);
-  g_slice_free (HandlerMatch, node);
+  g_free (node);
   
   return next;
 }
@@ -685,7 +685,7 @@ handlers_find (gpointer         instance,
 static inline Handler*
 handler_new (guint signal_id, gpointer instance, gboolean after)
 {
-  Handler *handler = g_slice_new (Handler);
+  Handler *handler = g_new (Handler, 1);
 #ifndef G_DISABLE_CHECKS
   if (g_handler_sequential_number < 1)
     g_error (G_STRLOC ": handler id overflow, %s", REPORT_BUG);
@@ -770,7 +770,7 @@ handler_unref_R (guint    signal_id,
       SIGNAL_UNLOCK ();
       g_closure_unref (handler->closure);
       SIGNAL_LOCK ();
-      g_slice_free (Handler, handler);
+      g_free (handler);
     }
 }
 

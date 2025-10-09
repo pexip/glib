@@ -107,7 +107,7 @@ g_string_maybe_expand (GString *string,
 GString *
 g_string_sized_new (gsize dfl_size)
 {
-  GString *string = g_slice_new (GString);
+  GString *string = g_new (GString, 1);
 
   string->allocated_len = 0;
   string->len   = 0;
@@ -211,7 +211,7 @@ g_string_free (GString  *string,
   else
     segment = string->str;
 
-  g_slice_free (GString, string);
+  g_free (string);
 
   return segment;
 }

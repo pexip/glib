@@ -29,7 +29,6 @@
 #endif
 
 #include "gmessages.h"
-#include "gslice.h"
 #include "gmain.h"
 #include "gthread.h"
 #include "gthreadprivate.h"
@@ -682,7 +681,7 @@ g_static_rec_mutex_get_rec_mutex_impl (GStaticRecMutex* mutex)
       result = (GRecMutex *) mutex->mutex.mutex;
       if (!result)
         {
-          result = g_slice_new (GRecMutex);
+          result = g_new (GRecMutex, 1);
           g_rec_mutex_init (result);
           g_atomic_pointer_set (&mutex->mutex.mutex, (GMutex *) result);
         }
@@ -847,7 +846,7 @@ g_static_rec_mutex_free (GStaticRecMutex *mutex)
       GRecMutex *rm = (GRecMutex *) mutex->mutex.mutex;
 
       g_rec_mutex_clear (rm);
-      g_slice_free (GRecMutex, rm);
+      g_free (rm);
     }
 }
 
@@ -1217,7 +1216,7 @@ g_private_new (GDestroyNotify notify)
   GPrivate tmp = G_PRIVATE_INIT (notify);
   GPrivate *key;
 
-  key = g_slice_new (GPrivate);
+  key = g_new (GPrivate, 1);
   *key = tmp;
 
   return key;
@@ -1462,7 +1461,7 @@ g_mutex_new (void)
 {
   GMutex *mutex;
 
-  mutex = g_slice_new (GMutex);
+  mutex = g_new (GMutex, 1);
   g_mutex_init (mutex);
 
   return mutex;
@@ -1484,7 +1483,7 @@ void
 g_mutex_free (GMutex *mutex)
 {
   g_mutex_clear (mutex);
-  g_slice_free (GMutex, mutex);
+  g_free (mutex);
 }
 
 /* GCond {{{1 ------------------------------------------------------ */
@@ -1504,7 +1503,7 @@ g_cond_new (void)
 {
   GCond *cond;
 
-  cond = g_slice_new (GCond);
+  cond = g_new (GCond, 1);
   g_cond_init (cond);
 
   return cond;
@@ -1526,7 +1525,7 @@ void
 g_cond_free (GCond *cond)
 {
   g_cond_clear (cond);
-  g_slice_free (GCond, cond);
+  g_free (cond);
 }
 
 /**

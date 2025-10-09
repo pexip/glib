@@ -26,7 +26,6 @@
 
 #include <glib/gtestutils.h>
 #include <glib/gthread.h>
-#include <glib/gslice.h>
 #include <glib/ghash.h>
 #include <glib/grefcount.h>
 
@@ -300,7 +299,7 @@ array_info_free (GVariantTypeInfo *info)
   array_info = (ArrayInfo *) info;
 
   g_variant_type_info_unref (array_info->element);
-  g_slice_free (ArrayInfo, array_info);
+  g_free (array_info);
 }
 
 static ContainerInfo *
@@ -308,7 +307,7 @@ array_info_new (const GVariantType *type)
 {
   ArrayInfo *info;
 
-  info = g_slice_new (ArrayInfo);
+  info = g_new (ArrayInfo, 1);
   info->container.info.container_class = GV_ARRAY_INFO_CLASS;
 
   info->element = g_variant_type_info_get (g_variant_type_element (type));
@@ -372,9 +371,8 @@ tuple_info_free (GVariantTypeInfo *info)
   for (i = 0; i < tuple_info->n_members; i++)
     g_variant_type_info_unref (tuple_info->members[i].type_info);
 
-  g_slice_free1 (sizeof (GVariantMemberInfo) * tuple_info->n_members,
-                 tuple_info->members);
-  g_slice_free (TupleInfo, tuple_info);
+  g_free (tuple_info->members);
+  g_free (tuple_info);
 }
 
 static void
@@ -386,7 +384,7 @@ tuple_allocate_members (const GVariantType  *type,
   gsize i = 0;
 
   *n_members = g_variant_type_n_items (type);
-  *members = g_slice_alloc (sizeof (GVariantMemberInfo) * *n_members);
+  *members = g_malloc (sizeof (GVariantMemberInfo) * *n_members);
 
   item_type = g_variant_type_first (type);
   while (item_type)
@@ -689,7 +687,7 @@ tuple_info_new (const GVariantType *type)
 {
   TupleInfo *info;
 
-  info = g_slice_new (TupleInfo);
+  info = g_new (TupleInfo, 1);
   info->container.info.container_class = GV_TUPLE_INFO_CLASS;
 
   tuple_allocate_members (type, &info->members, &info->n_members);

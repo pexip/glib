@@ -282,7 +282,7 @@ g_object_notify_queue_free (gpointer data)
   GObjectNotifyQueue *nqueue = data;
 
   g_slist_free (nqueue->pspecs);
-  g_slice_free (GObjectNotifyQueue, nqueue);
+  g_free (nqueue);
 }
 
 static GObjectNotifyQueue*
@@ -301,7 +301,7 @@ g_object_notify_queue_freeze (GObject  *object,
           return NULL;
         }
 
-      nqueue = g_slice_new0 (GObjectNotifyQueue);
+      nqueue = g_new0 (GObjectNotifyQueue, 1);
       g_datalist_id_set_data_full (&object->qdata, quark_notify_queue,
                                    nqueue, g_object_notify_queue_free);
     }

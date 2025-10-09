@@ -2611,7 +2611,7 @@ g_settings_binding_free (gpointer data)
 
   g_object_unref (binding->settings);
 
-  g_slice_free (GSettingsBinding, binding);
+  g_free (binding);
 }
 
 static GQuark
@@ -2883,7 +2883,7 @@ g_settings_bind_with_mapping (GSettings               *settings,
 
   objectclass = G_OBJECT_GET_CLASS (object);
 
-  binding = g_slice_new0 (GSettingsBinding);
+  binding = g_new0 (GSettingsBinding, 1);
   g_settings_schema_key_init (&binding->key, settings->priv->schema, key);
   binding->settings = g_object_ref (settings);
   binding->object = object;
@@ -3030,7 +3030,7 @@ g_settings_writable_binding_free (gpointer data)
 
   g_signal_handler_disconnect (binding->settings, binding->handler_id);
   g_object_unref (binding->settings);
-  g_slice_free (GSettingsWritableBinding, binding);
+  g_free (binding);
 }
 
 static void
@@ -3107,7 +3107,7 @@ g_settings_bind_writable (GSettings   *settings,
       return;
     }
 
-  binding = g_slice_new (GSettingsWritableBinding);
+  binding = g_new (GSettingsWritableBinding, 1);
   binding->settings = g_object_ref (settings);
   binding->object = object;
   binding->key = g_intern_string (key);

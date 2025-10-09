@@ -24,7 +24,6 @@
 
 #include "gchecksum.h"
 
-#include "gslice.h"
 #include "gmem.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
@@ -1476,7 +1475,7 @@ g_checksum_new (GChecksumType checksum_type)
   if (! IS_VALID_TYPE (checksum_type))
     return NULL;
 
-  checksum = g_slice_new0 (GChecksum);
+  checksum = g_new0 (GChecksum, 1);
   checksum->type = checksum_type;
 
   g_checksum_reset (checksum);
@@ -1543,7 +1542,7 @@ g_checksum_copy (const GChecksum *checksum)
 
   g_return_val_if_fail (checksum != NULL, NULL);
 
-  copy = g_slice_new (GChecksum);
+  copy = g_new (GChecksum, 1);
   *copy = *checksum;
 
   copy->digest_str = g_strdup (checksum->digest_str);
@@ -1566,7 +1565,7 @@ g_checksum_free (GChecksum *checksum)
     {
       g_free (checksum->digest_str);
 
-      g_slice_free (GChecksum, checksum);
+      g_free (checksum);
     }
 }
 

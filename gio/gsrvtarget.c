@@ -90,7 +90,7 @@ g_srv_target_new (const gchar *hostname,
                   guint16      priority,
                   guint16      weight)
 {
-  GSrvTarget *target = g_slice_new0 (GSrvTarget);
+  GSrvTarget *target = g_new0 (GSrvTarget, 1);
 
   target->hostname = g_strdup (hostname);
   target->port = port;
@@ -129,7 +129,7 @@ void
 g_srv_target_free (GSrvTarget *target)
 {
   g_free (target->hostname);
-  g_slice_free (GSrvTarget, target);
+  g_free (target);
 }
 
 /**

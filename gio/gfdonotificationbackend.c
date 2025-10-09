@@ -78,7 +78,7 @@ freedesktop_notification_free (gpointer data)
   if (n->default_action_target)
     g_variant_unref (n->default_action_target);
 
-  g_slice_free (FreedesktopNotification, n);
+  g_free (n);
 }
 
 static FreedesktopNotification *
@@ -88,7 +88,7 @@ freedesktop_notification_new (GFdoNotificationBackend *backend,
 {
   FreedesktopNotification *n;
 
-  n = g_slice_new0 (FreedesktopNotification);
+  n = g_new0 (FreedesktopNotification, 1);
   n->backend = g_object_ref (backend);
   n->id = g_strdup (id);
   n->notify_id = 0;

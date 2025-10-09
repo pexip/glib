@@ -508,7 +508,6 @@
 
 #include "ghash.h"
 #include "glib-init.h"
-#include "gslice.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
 #include "gthread.h"
@@ -700,14 +699,14 @@ g_error_allocate (GQuark domain, ErrorDomainInfo *out_info)
   if (private_size > 0 && RUNNING_ON_VALGRIND)
     {
       private_size += ALIGN_STRUCT (1);
-      allocated = g_slice_alloc0 (private_size + sizeof (GError) + sizeof (gpointer));
+      allocated = g_malloc0 (private_size + sizeof (GError) + sizeof (gpointer));
       *(gpointer *) (allocated + private_size + sizeof (GError)) = allocated + ALIGN_STRUCT (1);
       VALGRIND_MALLOCLIKE_BLOCK (allocated + private_size, sizeof (GError) + sizeof (gpointer), 0, TRUE);
       VALGRIND_MALLOCLIKE_BLOCK (allocated + ALIGN_STRUCT (1), private_size - ALIGN_STRUCT (1), 0, TRUE);
     }
   else
 #endif
-    allocated = g_slice_alloc0 (private_size + sizeof (GError));
+    allocated = g_malloc0 (private_size + sizeof (GError));
 
   error = (GError *) (allocated + private_size);
   return error;
@@ -864,13 +863,13 @@ g_error_free (GError *error)
       private_size += ALIGN_STRUCT (1);
       allocated -= ALIGN_STRUCT (1);
       *(gpointer *) (allocated + private_size + sizeof (GError)) = NULL;
-      g_slice_free1 (private_size + sizeof (GError) + sizeof (gpointer), allocated);
+      g_free (allocated);
       VALGRIND_FREELIKE_BLOCK (allocated + ALIGN_STRUCT (1), 0);
       VALGRIND_FREELIKE_BLOCK (error, 0);
     }
   else
 #endif
-  g_slice_free1 (private_size + sizeof (GError), allocated);
+  g_free (allocated);
 }
 
 /**

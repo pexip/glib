@@ -37,7 +37,6 @@
 
 #include "gcache.h"
 
-#include "gslice.h"
 #include "ghash.h"
 #include "gtestutils.h"
 
@@ -99,7 +98,7 @@ struct _GCache
 static inline GCacheNode*
 g_cache_node_new (gpointer value)
 {
-  GCacheNode *node = g_slice_new (GCacheNode);
+  GCacheNode *node = g_new (GCacheNode, 1);
   node->value = value;
   node->ref_count = 1;
   return node;
@@ -108,7 +107,7 @@ g_cache_node_new (gpointer value)
 static inline void
 g_cache_node_destroy (GCacheNode *node)
 {
-  g_slice_free (GCacheNode, node);
+  g_free (node);
 }
 
 /**
@@ -190,7 +189,7 @@ g_cache_new (GCacheNewFunc      value_new_func,
   g_return_val_if_fail (hash_value_func != NULL, NULL);
   g_return_val_if_fail (key_equal_func != NULL, NULL);
 
-  cache = g_slice_new (GCache);
+  cache = g_new (GCache, 1);
   cache->value_new_func = value_new_func;
   cache->value_destroy_func = value_destroy_func;
   cache->key_dup_func = key_dup_func;
@@ -219,7 +218,7 @@ g_cache_destroy (GCache *cache)
 
   g_hash_table_destroy (cache->key_table);
   g_hash_table_destroy (cache->value_table);
-  g_slice_free (GCache, cache);
+  g_free (cache);
 }
 
 /**

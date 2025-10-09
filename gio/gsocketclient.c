@@ -1498,7 +1498,7 @@ g_socket_client_async_connect_data_free (GSocketClientAsyncConnectData *data)
 
   g_clear_pointer (&data->error_info, socket_client_error_info_free);
 
-  g_slice_free (GSocketClientAsyncConnectData, data);
+  g_free (data);
 }
 
 typedef struct
@@ -2087,7 +2087,7 @@ g_socket_client_connect_async (GSocketClient       *client,
 
   g_return_if_fail (G_IS_SOCKET_CLIENT (client));
 
-  data = g_slice_new0 (GSocketClientAsyncConnectData);
+  data = g_new0 (GSocketClientAsyncConnectData, 1);
   data->client = client;
   data->connectable = g_object_ref (connectable);
   data->error_info = socket_client_error_info_new ();

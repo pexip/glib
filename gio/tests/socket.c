@@ -130,7 +130,7 @@ create_server_full (GSocketFamily   family,
   GSocketAddress *addr;
   GInetAddress *iaddr;
 
-  data = g_slice_new (IPTestData);
+  data = g_new (IPTestData, 1);
   data->family = family;
 
   data->server = server = g_socket_new (family,
@@ -199,7 +199,7 @@ create_server_full (GSocketFamily   family,
 
 error:
   g_clear_object (&data->server);
-  g_slice_free (IPTestData, data);
+  g_free (data);
 
   return NULL;
 }
@@ -429,7 +429,7 @@ test_ip_async (GSocketFamily family)
   g_object_unref (data->server);
   g_object_unref (client);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static void
@@ -570,7 +570,7 @@ test_ip_sync (GSocketFamily family)
   g_object_unref (data->server);
   g_object_unref (client);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static void
@@ -806,7 +806,7 @@ test_ip_sync_dgram (GSocketFamily family)
   g_object_unref (client);
   g_object_unref (dest_addr);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static void
@@ -1049,7 +1049,7 @@ test_close_graceful (void)
   g_object_unref (data->server);
   g_object_unref (client);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 #if defined (IPPROTO_IPV6) && defined (IPV6_V6ONLY)
@@ -1136,7 +1136,7 @@ test_ipv6_v4mapped (void)
   g_object_unref (client);
   g_object_unref (v4addr);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 #endif
 
@@ -1201,7 +1201,7 @@ test_timed_wait (void)
   g_object_unref (data->server);
   g_object_unref (client);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static int
@@ -1314,7 +1314,7 @@ test_fd_reuse (void)
   g_object_unref (client);
   g_object_unref (client2);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static void
@@ -2074,7 +2074,7 @@ test_credentials_tcp_client (void)
   g_object_unref (data->server);
   g_object_unref (client);
 
-  g_slice_free (IPTestData, data);
+  g_free (data);
 }
 
 static void
@@ -2089,7 +2089,7 @@ test_credentials_tcp_server (void)
   GSocket *sock = NULL;
   GCredentials *creds;
 
-  data = g_slice_new0 (IPTestData);
+  data = g_new0 (IPTestData, 1);
   data->family = family;
   data->server = server = g_socket_new (family,
 					G_SOCKET_TYPE_STREAM,
@@ -2147,7 +2147,7 @@ beach:
     g_clear_object (&data->server);
     g_clear_object (&data->client);
 
-    g_slice_free (IPTestData, data);
+    g_free (data);
   }
 }
 

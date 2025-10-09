@@ -470,7 +470,7 @@ static void
 dispatch_data_unref (DispatchData *data)
 {
   if (g_atomic_int_dec_and_test (&data->ref_count))
-    g_slice_free (DispatchData, data);
+    g_free (data);
 }
 
 static DispatchData *
@@ -626,7 +626,7 @@ g_dbus_interface_method_dispatch_helper (GDBusInterfaceSkeleton       *interface
       GTask *task;
       DispatchData *data;
 
-      data = g_slice_new0 (DispatchData);
+      data = g_new0 (DispatchData, 1);
       data->interface = interface;
       data->method_call_func = method_call_func;
       data->invocation = invocation;
@@ -668,7 +668,7 @@ new_connection (GDBusConnection *connection,
 {
   ConnectionData *data;
 
-  data = g_slice_new0 (ConnectionData);
+  data = g_new0 (ConnectionData, 1);
   data->connection      = g_object_ref (connection);
   data->registration_id = registration_id;
 
@@ -681,7 +681,7 @@ free_connection (ConnectionData *data)
   if (data != NULL)
     {
       g_object_unref (data->connection);
-      g_slice_free (ConnectionData, data);
+      g_free (data);
     }
 }
 

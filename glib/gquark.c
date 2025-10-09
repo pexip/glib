@@ -35,7 +35,6 @@
 
 #include <string.h>
 
-#include "gslice.h"
 #include "ghash.h"
 #include "gquark.h"
 #include "gstrfuncs.h"

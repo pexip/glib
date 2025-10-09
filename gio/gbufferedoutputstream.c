@@ -639,7 +639,7 @@ typedef struct {
 static void
 free_flush_data (gpointer data)
 {
-  g_slice_free (FlushData, data);
+  g_free (data);
 }
 
 /* This function is used by all three (i.e. 
@@ -701,7 +701,7 @@ g_buffered_output_stream_flush_async (GOutputStream        *stream,
   GTask *task;
   FlushData *fdata;
 
-  fdata = g_slice_new0 (FlushData);
+  fdata = g_new0 (FlushData, 1);
   fdata->flush_stream = TRUE;
   fdata->close_stream = FALSE;
 
@@ -734,7 +734,7 @@ g_buffered_output_stream_close_async (GOutputStream        *stream,
   GTask *task;
   FlushData *fdata;
 
-  fdata = g_slice_new0 (FlushData);
+  fdata = g_new0 (FlushData, 1);
   fdata->close_stream = TRUE;
 
   task = g_task_new (stream, cancellable, callback, data);

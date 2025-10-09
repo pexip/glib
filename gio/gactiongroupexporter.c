@@ -497,7 +497,7 @@ g_action_group_exporter_free (gpointer user_data)
   g_object_unref (exporter->action_group);
   g_free (exporter->object_path);
 
-  g_slice_free (GActionGroupExporter, exporter);
+  g_free (exporter);
 }
 
 /**
@@ -559,13 +559,13 @@ g_dbus_connection_export_action_group (GDBusConnection  *connection,
       g_dbus_node_info_unref (info);
     }
 
-  exporter = g_slice_new (GActionGroupExporter);
+  exporter = g_new (GActionGroupExporter, 1);
   id = g_dbus_connection_register_object (connection, object_path, org_gtk_Actions, &vtable,
                                           exporter, g_action_group_exporter_free, error);
 
   if (id == 0)
     {
-      g_slice_free (GActionGroupExporter, exporter);
+      g_free (exporter);
       return 0;
     }
 

@@ -1063,7 +1063,7 @@ static void
 free_lookup_records_data (LookupRecordsData *lrd)
 {
   g_free (lrd->rrname);
-  g_slice_free (LookupRecordsData, lrd);
+  g_free (lrd);
 }
 
 static void
@@ -1201,7 +1201,7 @@ lookup_records (GResolver              *resolver,
   g_task_set_source_tag (task, lookup_records);
   g_task_set_name (task, "[gio] resolver lookup records");
 
-  lrd = g_slice_new (LookupRecordsData);
+  lrd = g_new (LookupRecordsData, 1);
   lrd->rrname = g_strdup (rrname);
   lrd->record_type = record_type;
   g_task_set_task_data (task, lrd, (GDestroyNotify) free_lookup_records_data);
@@ -1229,7 +1229,7 @@ lookup_records_async (GResolver           *resolver,
   g_task_set_source_tag (task, lookup_records_async);
   g_task_set_name (task, "[gio] resolver lookup records");
 
-  lrd = g_slice_new (LookupRecordsData);
+  lrd = g_new (LookupRecordsData, 1);
   lrd->rrname = g_strdup (rrname);
   lrd->record_type = record_type;
   g_task_set_task_data (task, lrd, (GDestroyNotify) free_lookup_records_data);

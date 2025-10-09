@@ -33,7 +33,6 @@
 #include "gslist.h"
 
 #include "gtestutils.h"
-#include "gslice.h"
 
 /**
  * SECTION:linked_lists_single
@@ -108,9 +107,9 @@
  * Returns: the next element, or %NULL if there are no more elements.
  **/
 
-#define _g_slist_alloc0()       g_slice_new0 (GSList)
-#define _g_slist_alloc()        g_slice_new (GSList)
-#define _g_slist_free1(slist)   g_slice_free (GSList, slist)
+#define _g_slist_alloc0()       g_new0 (GSList, 1)
+#define _g_slist_alloc()        g_new (GSList, 1)
+#define _g_slist_free1(slist)   g_free (slist)
 
 /**
  * g_slist_alloc:
@@ -148,7 +147,11 @@ g_slist_alloc (void)
 void
 g_slist_free (GSList *list)
 {
-  g_slice_free_chain (GSList, list, next);
+  while (list) {
+   GSList *next = list->next;
+   g_free (list);
+   list = next;
+  }
 }
 
 /**

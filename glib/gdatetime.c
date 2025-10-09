@@ -73,7 +73,6 @@
 #include "glibintl.h"
 #include "gmain.h"
 #include "gmappedfile.h"
-#include "gslice.h"
 #include "gstrfuncs.h"
 #include "gtestutils.h"
 #include "gthread.h"
@@ -675,7 +674,7 @@ g_date_time_alloc (GTimeZone *tz)
 {
   GDateTime *datetime;
 
-  datetime = g_slice_new0 (GDateTime);
+  datetime = g_new0 (GDateTime, 1);
   datetime->tz = g_time_zone_ref (tz);
   datetime->ref_count = 1;
 
@@ -723,7 +722,7 @@ g_date_time_unref (GDateTime *datetime)
   if (g_atomic_int_dec_and_test (&datetime->ref_count))
     {
       g_time_zone_unref (datetime->tz);
-      g_slice_free (GDateTime, datetime);
+      g_free (datetime);
     }
 }
 

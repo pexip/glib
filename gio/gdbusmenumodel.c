@@ -217,7 +217,7 @@ path_identifier_free (PathIdentifier *id)
   g_free (id->bus_name);
   g_free (id->object_path);
 
-  g_slice_free (PathIdentifier, id);
+  g_free (id);
 }
 
 static PathIdentifier *
@@ -225,7 +225,7 @@ path_identifier_new (ConstPathIdentifier *cid)
 {
   PathIdentifier *id;
 
-  id = g_slice_new (PathIdentifier);
+  id = g_new (PathIdentifier, 1);
   id->context = g_main_context_ref (cid->context);
   id->connection = g_object_ref (cid->connection);
   id->bus_name = g_strdup (cid->bus_name);
@@ -265,7 +265,7 @@ g_dbus_menu_path_unref (GDBusMenuPath *path)
       g_hash_table_unref (path->groups);
       path_identifier_free (path->id);
 
-      g_slice_free (GDBusMenuPath, path);
+      g_free (path);
     }
 }
 
@@ -335,7 +335,7 @@ g_dbus_menu_path_get (GMainContext    *context,
 
   if (path == NULL)
     {
-      path = g_slice_new (GDBusMenuPath);
+      path = g_new (GDBusMenuPath, 1);
       path->id = path_identifier_new (&cid);
       path->groups = g_hash_table_new (NULL, NULL);
       path->ref_count = 0;
@@ -395,7 +395,7 @@ g_dbus_menu_group_unref (GDBusMenuGroup *group)
 
       g_dbus_menu_path_unref (group->path);
 
-      g_slice_free (GDBusMenuGroup, group);
+      g_free (group);
     }
 }
 
@@ -407,7 +407,7 @@ g_dbus_menu_model_item_free (gpointer data)
   g_hash_table_unref (item->attributes);
   g_hash_table_unref (item->links);
 
-  g_slice_free (GDBusMenuModelItem, item);
+  g_free (item);
 }
 
 static GDBusMenuModelItem *
@@ -418,7 +418,7 @@ g_dbus_menu_group_create_item (GVariant *description)
   const gchar *key;
   GVariant *value;
 
-  item = g_slice_new (GDBusMenuModelItem);
+  item = g_new (GDBusMenuModelItem, 1);
   item->attributes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_variant_unref);
   item->links = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_variant_unref);
 
@@ -647,7 +647,7 @@ g_dbus_menu_group_get_from_path (GDBusMenuPath *path,
 
   if (group == NULL)
     {
-      group = g_slice_new (GDBusMenuGroup);
+      group = g_new (GDBusMenuGroup, 1);
       group->path = g_dbus_menu_path_ref (path);
       group->id = group_id;
       group->proxies = g_hash_table_new (NULL, NULL);

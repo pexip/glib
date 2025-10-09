@@ -44,7 +44,6 @@
 #include "gmem.h"
 #include "gmessages.h"
 #include "gshell.h"
-#include "gslice.h"
 #include "gstdio.h"
 #include "gstring.h"
 #include "gstrfuncs.h"
@@ -264,7 +263,7 @@ bookmark_app_info_new (const gchar *name)
 
   g_warn_if_fail (name != NULL);
 
-  retval = g_slice_new (BookmarkAppInfo);
+  retval = g_new (BookmarkAppInfo, 1);
 
   retval->name = g_strdup (name);
   retval->exec = NULL;
@@ -284,7 +283,7 @@ bookmark_app_info_free (BookmarkAppInfo *app_info)
   g_free (app_info->exec);
   g_clear_pointer (&app_info->stamp, g_date_time_unref);
 
-  g_slice_free (BookmarkAppInfo, app_info);
+  g_free (app_info);
 }
 
 static BookmarkAppInfo *
@@ -361,7 +360,7 @@ bookmark_metadata_new (void)
 {
   BookmarkMetadata *retval;
 
-  retval = g_slice_new (BookmarkMetadata);
+  retval = g_new (BookmarkMetadata, 1);
 
   retval->mime_type = NULL;
 
@@ -397,7 +396,7 @@ bookmark_metadata_free (BookmarkMetadata *metadata)
   g_free (metadata->icon_href);
   g_free (metadata->icon_mime);
 
-  g_slice_free (BookmarkMetadata, metadata);
+  g_free (metadata);
 }
 
 static BookmarkMetadata *
@@ -570,7 +569,7 @@ bookmark_item_new (const gchar *uri)
 
   g_warn_if_fail (uri != NULL);
 
-  item = g_slice_new (BookmarkItem);
+  item = g_new (BookmarkItem, 1);
   item->uri = g_strdup (uri);
 
   item->title = NULL;
@@ -602,7 +601,7 @@ bookmark_item_free (BookmarkItem *item)
   g_clear_pointer (&item->modified, g_date_time_unref);
   g_clear_pointer (&item->visited, g_date_time_unref);
 
-  g_slice_free (BookmarkItem, item);
+  g_free (item);
 }
 
 static BookmarkItem *

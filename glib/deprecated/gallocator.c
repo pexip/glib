@@ -22,8 +22,8 @@
 
 #include "gallocator.h"
 
+#include <glib/gmem.h>
 #include <glib/gmessages.h>
-#include <glib/gslice.h>
 
 struct _GMemChunk {
   guint alloc_size;           /* the size of an atom */
@@ -39,7 +39,7 @@ g_mem_chunk_new (const gchar *name,
 
   g_return_val_if_fail (atom_size > 0, NULL);
 
-  mem_chunk = g_slice_new (GMemChunk);
+  mem_chunk = g_new (GMemChunk, 1);
   mem_chunk->alloc_size = atom_size;
 
   return mem_chunk;
@@ -50,7 +50,7 @@ g_mem_chunk_destroy (GMemChunk *mem_chunk)
 {
   g_return_if_fail (mem_chunk != NULL);
 
-  g_slice_free (GMemChunk, mem_chunk);
+  g_free (mem_chunk);
 }
 
 gpointer
@@ -58,7 +58,7 @@ g_mem_chunk_alloc (GMemChunk *mem_chunk)
 {
   g_return_val_if_fail (mem_chunk != NULL, NULL);
 
-  return g_slice_alloc (mem_chunk->alloc_size);
+  return g_malloc (mem_chunk->alloc_size);
 }
 
 gpointer
@@ -66,7 +66,7 @@ g_mem_chunk_alloc0 (GMemChunk *mem_chunk)
 {
   g_return_val_if_fail (mem_chunk != NULL, NULL);
 
-  return g_slice_alloc0 (mem_chunk->alloc_size);
+  return g_malloc0 (mem_chunk->alloc_size);
 }
 
 void
@@ -75,7 +75,7 @@ g_mem_chunk_free (GMemChunk *mem_chunk,
 {
   g_return_if_fail (mem_chunk != NULL);
 
-  g_slice_free1 (mem_chunk->alloc_size, mem);
+  g_free (mem);
 }
 
 GAllocator*
