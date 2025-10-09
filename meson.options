@@ -162,3 +162,8 @@ option('file_monitor_backend',
        choices : ['auto', 'inotify', 'kqueue', 'libinotify-kqueue', 'win32'],
        value : 'auto',
        description : 'The name of the system API to use as a GFileMonitor backend')
+
+option('mimalloc',
+       type : 'feature',
+       value : 'auto',
+       description : 'build with mimalloc support')
