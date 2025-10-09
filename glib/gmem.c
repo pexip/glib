@@ -32,6 +32,10 @@
 
 #include "gmem.h"
 
+#if defined(HAVE_MIMALLOC)
+#include <mimalloc.h>
+#endif
+
 #if defined(HAVE_POSIX_MEMALIGN) && !defined(_XOPEN_SOURCE)
 # define _XOPEN_SOURCE 600
 #endif
@@ -127,7 +131,11 @@ g_malloc (gsize n_bytes)
     {
       gpointer mem;
 
+#if defined(HAVE_MIMALLOC)
+      mem = mi_malloc (n_bytes);
+#else
       mem = malloc (n_bytes);
+#endif
       TRACE (GLIB_MEM_ALLOC((void*) mem, (unsigned int) n_bytes, 0, 0));
       if (mem)
 	return mem;
@@ -160,7 +168,11 @@ g_malloc0 (gsize n_bytes)
     {
       gpointer mem;
 
+#if defined(HAVE_MIMALLOC)
+      mem = mi_calloc (1, n_bytes);
+#else
       mem = calloc (1, n_bytes);
+#endif
       TRACE (GLIB_MEM_ALLOC((void*) mem, (unsigned int) n_bytes, 1, 0));
       if (mem)
 	return mem;
@@ -198,7 +210,11 @@ g_realloc (gpointer mem,
 
   if (G_LIKELY (n_bytes))
     {
+#if defined(HAVE_MIMALLOC)
+      newmem = mi_realloc (mem, n_bytes);
+#else
       newmem = realloc (mem, n_bytes);
+#endif
       TRACE (GLIB_MEM_REALLOC((void*) newmem, (void*)mem, (unsigned int) n_bytes, 0));
       if (newmem)
 	return newmem;
@@ -226,7 +242,11 @@ g_realloc (gpointer mem,
 void
 g_free (gpointer mem)
 {
+#if defined(HAVE_MIMALLOC)
+  mi_free (mem);
+#else
   free (mem);
+#endif
   TRACE(GLIB_MEM_FREE((void*) mem));
 }
 
@@ -283,7 +303,11 @@ g_try_malloc (gsize n_bytes)
   gpointer mem;
 
   if (G_LIKELY (n_bytes))
+#if defined(HAVE_MIMALLOC)
+    mem = mi_malloc (n_bytes);
+#else
     mem = malloc (n_bytes);
+#endif
   else
     mem = NULL;
 
@@ -308,7 +332,11 @@ g_try_malloc0 (gsize n_bytes)
   gpointer mem;
 
   if (G_LIKELY (n_bytes))
+#if defined(HAVE_MIMALLOC)
+    mem = mi_calloc (1, n_bytes);
+#else
     mem = calloc (1, n_bytes);
+#endif
   else
     mem = NULL;
 
@@ -335,7 +363,11 @@ g_try_realloc (gpointer mem,
   gpointer newmem;
 
   if (G_LIKELY (n_bytes))
+#if defined(HAVE_MIMALLOC)
+    newmem = mi_realloc (mem, n_bytes);
+#else
     newmem = realloc (mem, n_bytes);
+#endif
   else
     {
       newmem = NULL;

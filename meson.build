@@ -2115,6 +2115,9 @@ glib_conf.set('HAVE_GETTEXT', 1)
 
 glib_conf.set_quoted('GLIB_LOCALE_DIR', join_paths(glib_datadir, 'locale'))
 
+mimalloc_dep = dependency('mimalloc', required : false)
+glib_conf.set('HAVE_MIMALLOC', mimalloc_dep.found())
+
 # libmount is only used by gio, but we need to fetch the libs to generate the
 # pkg-config file below
 libmount_dep = []
