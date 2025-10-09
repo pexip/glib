@@ -177,7 +177,7 @@ free_data (VariantData *data)
 {
   *(data->weak_ptr) = TRUE;
   g_free (data->mem);
-  g_slice_free (VariantData, data);
+  g_free (data);
 }
 
 static GVariant *
@@ -188,7 +188,7 @@ test_object_real_signal3 (TestObject *tobject,
   VariantData *data;
 
   variant = g_variant_ref_sink (g_variant_new_uint32 (42));
-  data = g_slice_new (VariantData);
+  data = g_new (VariantData, 1);
   data->weak_ptr = weak_ptr;
   data->n = g_variant_get_size (variant);
   data->mem = g_malloc (data->n);

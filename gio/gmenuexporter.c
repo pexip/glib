@@ -128,7 +128,7 @@ g_menu_exporter_menu_free (GMenuExporterMenu *menu)
 
   g_object_unref (menu->model);
 
-  g_slice_free (GMenuExporterMenu, menu);
+  g_free (menu);
 }
 
 static void
@@ -144,7 +144,7 @@ g_menu_exporter_link_free (gpointer data)
       g_menu_exporter_menu_free (tmp->menu);
       g_free (tmp->name);
 
-      g_slice_free (GMenuExporterLink, tmp);
+      g_free (tmp);
     }
 }
 
@@ -172,7 +172,7 @@ g_menu_exporter_menu_create_links (GMenuExporterMenu *menu,
       else
         group = menu->group;
 
-      tmp = g_slice_new (GMenuExporterLink);
+      tmp = g_new (GMenuExporterLink, 1);
       tmp->name = g_strconcat (":", name, NULL);
       tmp->menu = g_menu_exporter_group_add_menu (group, model);
       tmp->next = list;
@@ -306,7 +306,7 @@ g_menu_exporter_menu_new (GMenuExporterGroup *group,
 {
   GMenuExporterMenu *menu;
 
-  menu = g_slice_new0 (GMenuExporterMenu);
+  menu = g_new0 (GMenuExporterMenu, 1);
   menu->group = group;
   menu->id = id;
   menu->model = g_object_ref (model);
@@ -337,7 +337,7 @@ g_menu_exporter_group_check_if_useless (GMenuExporterGroup *group)
 
       g_hash_table_unref (group->menus);
 
-      g_slice_free (GMenuExporterGroup, group);
+      g_free (group);
     }
 }
 
@@ -450,7 +450,7 @@ g_menu_exporter_group_new (GMenuExporter *exporter,
 {
   GMenuExporterGroup *group;
 
-  group = g_slice_new0 (GMenuExporterGroup);
+  group = g_new0 (GMenuExporterGroup, 1);
   group->menus = g_hash_table_new (NULL, NULL);
   group->exporter = exporter;
   group->id = id;
@@ -531,7 +531,7 @@ g_menu_exporter_remote_free (gpointer data)
 
   g_hash_table_unref (remote->watches);
 
-  g_slice_free (GMenuExporterRemote, remote);
+  g_free (remote);
 }
 
 static GMenuExporterRemote *
@@ -540,7 +540,7 @@ g_menu_exporter_remote_new (GMenuExporter *exporter,
 {
   GMenuExporterRemote *remote;
 
-  remote = g_slice_new0 (GMenuExporterRemote);
+  remote = g_new0 (GMenuExporterRemote, 1);
   remote->exporter = exporter;
   remote->watches = g_hash_table_new (NULL, NULL);
   remote->watch_id = watch_id;
@@ -716,7 +716,7 @@ g_menu_exporter_free (GMenuExporter *exporter)
   g_object_unref (exporter->connection);
   g_free (exporter->object_path);
 
-  g_slice_free (GMenuExporter, exporter);
+  g_free (exporter);
 }
 
 static void
@@ -791,7 +791,7 @@ g_dbus_connection_export_menu_model (GDBusConnection  *connection,
   GMenuExporter *exporter;
   guint id;
 
-  exporter = g_slice_new0 (GMenuExporter);
+  exporter = g_new0 (GMenuExporter, 1);
   exporter->connection = g_object_ref (connection);
   exporter->object_path = g_strdup (object_path);
   exporter->groups = g_hash_table_new (NULL, NULL);

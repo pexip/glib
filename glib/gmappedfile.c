@@ -108,7 +108,7 @@ g_mapped_file_destroy (GMappedFile *file)
 #endif
     }
 
-  g_slice_free (GMappedFile, file);
+  g_free (file);
 }
 
 static GMappedFile*
@@ -120,7 +120,7 @@ mapped_file_new_from_fd (int           fd,
   GMappedFile *file;
   struct stat st;
 
-  file = g_slice_new0 (GMappedFile);
+  file = g_new0 (GMappedFile, 1);
   file->ref_count = 1;
   file->free_func = g_mapped_file_destroy;
 
@@ -224,7 +224,7 @@ error:
   return file;
 
  out:
-  g_slice_free (GMappedFile, file);
+  g_free (file);
 
   return NULL;
 }

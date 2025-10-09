@@ -168,7 +168,7 @@ test_item_new (GHashTable *attributes,
 {
   TestItem *item;
 
-  item = g_slice_new (TestItem);
+  item = g_new (TestItem, 1);
   item->attributes = g_hash_table_ref (attributes);
   item->links = g_hash_table_ref (links);
 
@@ -183,7 +183,7 @@ test_item_free (gpointer data)
   g_hash_table_unref (item->attributes);
   g_hash_table_unref (item->links);
 
-  g_slice_free (TestItem, item);
+  g_free (item);
 }
 
 /* RandomMenu {{{1 */

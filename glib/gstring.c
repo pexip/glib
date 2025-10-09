@@ -104,7 +104,7 @@ g_string_maybe_expand (GString *string,
 GString *
 g_string_sized_new (gsize dfl_size)
 {
-  GString *string = g_slice_new (GString);
+  GString *string = g_new (GString, 1);
 
   string->allocated_len = 0;
   string->len   = 0;
@@ -171,7 +171,7 @@ g_string_new_take (gchar *init)
       return g_string_new (NULL);
     }
 
-  string = g_slice_new (GString);
+  string = g_new (GString, 1);
 
   string->str = init;
   string->len = strlen (string->str);
@@ -233,7 +233,7 @@ g_string_copy (GString *string)
 
   g_return_val_if_fail (string != NULL, NULL);
 
-  copy = g_slice_new (GString);
+  copy = g_new (GString, 1);
   copy->allocated_len = string->allocated_len;
   copy->len = string->len;
 
@@ -278,7 +278,7 @@ gchar *
   else
     segment = string->str;
 
-  g_slice_free (GString, string);
+  g_free (string);
 
   return segment;
 }

@@ -613,7 +613,7 @@ free_connect_data (ConnectAsyncData *data)
   g_free (data->password);
   g_free (data->buffer);
 
-  g_slice_free (ConnectAsyncData, data);
+  g_free (data);
 }
 
 static void
@@ -653,7 +653,7 @@ g_socks5_proxy_connect_async (GProxy               *proxy,
   GTask *task;
   ConnectAsyncData *data;
 
-  data = g_slice_new0 (ConnectAsyncData);
+  data = g_new0 (ConnectAsyncData, 1);
   data->io_stream = g_object_ref (io_stream);
 
   task = g_task_new (proxy, cancellable, callback, user_data);

@@ -356,7 +356,7 @@ new_item (int x)
 {
   ListItem *item;
 
-  item = g_slice_new (ListItem);
+  item = g_new (ListItem, 1);
   item->freed = FALSE;
   item->x = x;
 
@@ -380,9 +380,9 @@ test_free_full (void)
   g_assert (one->freed);
   g_assert (two->freed);
   g_assert (three->freed);
-  g_slice_free (ListItem, one);
-  g_slice_free (ListItem, two);
-  g_slice_free (ListItem, three);
+  g_free (one);
+  g_free (two);
+  g_free (three);
 
   list = g_list_prepend (list, one = new_item (1));
   list = g_list_prepend (list, two = new_item (2));
@@ -394,9 +394,9 @@ test_free_full (void)
   g_assert (one->freed);
   g_assert (two->freed);
   g_assert (three->freed);
-  g_slice_free (ListItem, one);
-  g_slice_free (ListItem, two);
-  g_slice_free (ListItem, three);
+  g_free (one);
+  g_free (two);
+  g_free (three);
 }
 
 static void

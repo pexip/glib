@@ -84,7 +84,7 @@ g_threaded_socket_service_data_free (GThreadedSocketServiceData *data)
   g_clear_object (&data->service);
   g_clear_object (&data->connection);
   g_clear_object (&data->source_object);
-  g_slice_free (GThreadedSocketServiceData, data);
+  g_free (data);
 }
 
 static void
@@ -116,7 +116,7 @@ g_threaded_socket_service_incoming (GSocketService    *service,
 
   threaded = G_THREADED_SOCKET_SERVICE (service);
 
-  data = g_slice_new0 (GThreadedSocketServiceData);
+  data = g_new0 (GThreadedSocketServiceData, 1);
   data->service = g_object_ref (threaded);
   data->connection = g_object_ref (connection);
   data->source_object = (source_object != NULL) ? g_object_ref (source_object) : NULL;

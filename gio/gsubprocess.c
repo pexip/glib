@@ -1033,7 +1033,7 @@ g_subprocess_actually_send_signal (gpointer user_data)
 
   g_object_unref (signal_record->subprocess);
 
-  g_slice_free (SignalRecord, signal_record);
+  g_free (signal_record);
 
   return FALSE;
 }
@@ -1043,6 +1043,8 @@ g_subprocess_dispatch_signal (GSubprocess *subprocess,
                               gint         signalnum)
 {
   SignalRecord signal_record = { g_object_ref (subprocess), signalnum };
+  SignalRecord *signal_record_copy = g_new (SignalRecord, 1);
+  memcpy (signal_record_copy, &signal_record, sizeof (SignalRecord));
 
   g_return_if_fail (G_IS_SUBPROCESS (subprocess));
 
@@ -1060,7 +1062,7 @@ g_subprocess_dispatch_signal (GSubprocess *subprocess,
   g_main_context_invoke_full (GLIB_PRIVATE_CALL (g_get_worker_context) (),
                               G_PRIORITY_HIGH_IDLE,
                               g_subprocess_actually_send_signal,
-                              g_slice_dup (SignalRecord, &signal_record),
+                              signal_record_copy,
                               NULL);
 }
 
@@ -1522,7 +1524,7 @@ g_subprocess_communicate_state_free (gpointer data)
       g_source_unref (state->cancellable_source);
     }
 
-  g_slice_free (CommunicateState, state);
+  g_free (state);
 }
 
 static CommunicateState *
@@ -1539,7 +1541,7 @@ g_subprocess_communicate_internal (GSubprocess         *subprocess,
   task = g_task_new (subprocess, cancellable, callback, user_data);
   g_task_set_source_tag (task, g_subprocess_communicate_internal);
 
-  state = g_slice_new0 (CommunicateState);
+  state = g_new0 (CommunicateState, 1);
   g_task_set_task_data (task, state, g_subprocess_communicate_state_free);
 
   state->cancellable = g_cancellable_new ();

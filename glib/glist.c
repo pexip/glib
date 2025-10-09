@@ -31,7 +31,6 @@
 #include "config.h"
 
 #include "glist.h"
-#include "gslice.h"
 #include "gmessages.h"
 
 #include "gtestutils.h"
@@ -70,9 +69,9 @@
  * Returns: the next element, or %NULL if there are no more elements
  **/
 
-#define _g_list_alloc()         g_slice_new (GList)
-#define _g_list_alloc0()        g_slice_new0 (GList)
-#define _g_list_free1(list)     g_slice_free (GList, list)
+#define _g_list_alloc()         g_new (GList, 1)
+#define _g_list_alloc0()        g_new0 (GList, 1)
+#define _g_list_free1(list)     g_free (list)
 
 /**
  * g_list_alloc:
@@ -109,7 +108,11 @@ g_list_alloc (void)
 void
 g_list_free (GList *list)
 {
-  g_slice_free_chain (GList, list, next);
+  while (list) {
+   GList *next = list->next;
+   g_free (list);
+   list = next;
+  }
 }
 
 /**

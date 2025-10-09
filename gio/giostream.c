@@ -626,7 +626,7 @@ stream_close_complete (GObject      *source,
       else
         g_task_return_boolean (task, TRUE);
 
-      g_slice_free (CloseAsyncData, data);
+      g_free (data);
       g_object_unref (task);
     }
 }
@@ -666,7 +666,7 @@ g_io_stream_real_close_async (GIOStream           *stream,
        * object that would not do it for itself because it may not be
        * threadsafe.
        */
-      data = g_slice_new (CloseAsyncData);
+      data = g_new (CloseAsyncData, 1);
       data->error = NULL;
       data->pending = 2;
 
@@ -710,7 +710,7 @@ splice_context_free (SpliceContext *ctx)
   g_object_unref (ctx->op1_cancellable);
   g_object_unref (ctx->op2_cancellable);
   g_clear_error (&ctx->error);
-  g_slice_free (SpliceContext, ctx);
+  g_free (ctx);
 }
 
 static void
@@ -882,7 +882,7 @@ g_io_stream_splice_async (GIOStream            *stream1,
       return;
     }
 
-  ctx = g_slice_new0 (SpliceContext);
+  ctx = g_new0 (SpliceContext, 1);
   ctx->stream1 = g_object_ref (stream1);
   ctx->stream2 = g_object_ref (stream2);
   ctx->flags = flags;

@@ -46,7 +46,6 @@
 #include "glib-init.h"
 #include "gthread.h"
 #include "gthreadprivate.h"
-#include "gslice.h"
 
 #include <windows.h>
 
@@ -114,7 +113,7 @@ g_rec_mutex_impl_new (void)
 {
   CRITICAL_SECTION *cs;
 
-  cs = g_slice_new (CRITICAL_SECTION);
+  cs = g_new (CRITICAL_SECTION, 1);
   InitializeCriticalSection (cs);
 
   return cs;
@@ -124,7 +123,7 @@ static void
 g_rec_mutex_impl_free (CRITICAL_SECTION *cs)
 {
   DeleteCriticalSection (cs);
-  g_slice_free (CRITICAL_SECTION, cs);
+  g_free (cs);
 }
 
 static CRITICAL_SECTION *
@@ -336,9 +335,9 @@ _g_private_get_impl (GPrivate *key)
 
           if (key->notify != NULL)
             {
-              destructor = malloc (sizeof (GPrivateDestructor));
+              destructor = g_malloc (sizeof (GPrivateDestructor));
               if G_UNLIKELY (destructor == NULL)
-                g_thread_abort (errno, "malloc");
+                g_thread_abort (errno, "g_malloc");
               destructor->index = impl;
               destructor->notify = key->notify;
               destructor->next = g_atomic_pointer_get (&g_private_destructors);
@@ -418,7 +417,7 @@ g_system_thread_free (GRealThread *thread)
   GThreadWin32 *wt = (GThreadWin32 *) thread;
 
   win32_check_for_error (CloseHandle (wt->handle));
-  g_slice_free (GThreadWin32, wt);
+  g_free (wt);
 }
 
 void
@@ -455,7 +454,7 @@ g_system_thread_new (GThreadFunc proxy,
   const gchar *message = NULL;
   int thread_prio;
 
-  thread = g_slice_new0 (GThreadWin32);
+  thread = g_new0 (GThreadWin32, 1);
   thread->proxy = proxy;
   thread->handle = (HANDLE) NULL;
   base_thread = (GRealThread*)thread;
@@ -520,7 +519,7 @@ error:
     g_free (win_error);
     if (thread->handle)
       CloseHandle (thread->handle);
-    g_slice_free (GThreadWin32, thread);
+    g_free (thread);
     return NULL;
   }
 }

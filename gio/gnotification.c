@@ -114,7 +114,7 @@ button_free (gpointer data)
   if (button->target)
     g_variant_unref (button->target);
 
-  g_slice_free (Button, button);
+  g_free (button);
 }
 
 static void
@@ -517,7 +517,7 @@ g_notification_add_button_with_target_value (GNotification *notification,
                  "This is unlikely to work properly.", G_STRFUNC, action);
     }
 
-  button =  g_slice_new0 (Button);
+  button =  g_new0 (Button, 1);
   button->label = g_strdup (label);
   button->action_name = g_strdup (action);
 

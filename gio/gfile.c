@@ -6606,7 +6606,7 @@ move_async_data_free (MoveAsyncData *data)
 {
   g_object_unref (data->source);
   g_object_unref (data->destination);
-  g_slice_free (MoveAsyncData, data);
+  g_free (data);
 }
 
 typedef struct {
@@ -6686,7 +6686,7 @@ g_file_real_move_async (GFile                  *source,
   GTask *task;
   MoveAsyncData *data;
 
-  data = g_slice_new0 (MoveAsyncData);
+  data = g_new0 (MoveAsyncData, 1);
   data->source = g_object_ref (source);
   data->destination = g_object_ref (destination);
   data->flags = flags;
@@ -7099,7 +7099,7 @@ copy_async_data_free (CopyAsyncData *data)
 {
   g_object_unref (data->source);
   g_object_unref (data->destination);
-  g_slice_free (CopyAsyncData, data);
+  g_free (data);
 }
 
 typedef struct {
@@ -7179,7 +7179,7 @@ g_file_real_copy_async (GFile                  *source,
   GTask *task;
   CopyAsyncData *data;
 
-  data = g_slice_new (CopyAsyncData);
+  data = g_new (CopyAsyncData, 1);
   data->source = g_object_ref (source);
   data->destination = g_object_ref (destination);
   data->flags = flags;

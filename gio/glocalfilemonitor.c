@@ -121,7 +121,7 @@ pending_change_free (gpointer data)
 
   g_free (change->child);
 
-  g_slice_free (PendingChange, change);
+  g_free (change);
 }
 
 static void
@@ -131,7 +131,7 @@ queued_event_free (QueuedEvent *event)
   if (event->other)
     g_object_unref (event->other);
 
-  g_slice_free (QueuedEvent, event);
+  g_free (event);
 }
 
 static gint64
@@ -170,7 +170,7 @@ g_file_monitor_source_add_pending_change (GFileMonitorSource *fms,
   PendingChange *change;
   GSequenceIter *iter;
 
-  change = g_slice_new (PendingChange);
+  change = g_new (PendingChange, 1);
   change->child = g_strdup (child);
   change->last_emission = now;
   change->dirty = FALSE;
@@ -229,7 +229,7 @@ g_file_monitor_source_queue_event (GFileMonitorSource *fms,
 {
   QueuedEvent *event;
 
-  event = g_slice_new (QueuedEvent);
+  event = g_new (QueuedEvent, 1);
   event->event_type = event_type;
   if (child != NULL && fms->dirname != NULL)
     event->child = g_local_file_new_from_dirname_and_basename (fms->dirname, child);

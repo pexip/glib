@@ -34,7 +34,6 @@
 #include "glib/gvariant-core.h"
 #include "gvariant-internal.h"
 #include "gvarianttype.h"
-#include "gslice.h"
 #include "gthread.h"
 
 /*
@@ -838,7 +837,7 @@ maybe_free (AST *ast)
   if (maybe->child != NULL)
     ast_free (maybe->child);
 
-  g_slice_free (Maybe, maybe);
+  g_free (maybe);
 }
 
 static AST *
@@ -870,7 +869,7 @@ maybe_parse (TokenStream  *stream,
       return NULL;
     }
 
-  maybe = g_slice_new (Maybe);
+  maybe = g_new (Maybe, 1);
   maybe->ast.class = &maybe_class;
   maybe->child = child;
 
@@ -1032,7 +1031,7 @@ array_free (AST *ast)
   Array *array = (Array *) ast;
 
   ast_array_free (array->children, array->n_children);
-  g_slice_free (Array, array);
+  g_free (array);
 }
 
 static AST *
@@ -1049,7 +1048,7 @@ array_parse (TokenStream  *stream,
   gboolean need_comma = FALSE;
   Array *array;
 
-  array = g_slice_new (Array);
+  array = g_new (Array, 1);
   array->ast.class = &array_class;
   array->children = NULL;
   array->n_children = 0;
@@ -1078,7 +1077,7 @@ array_parse (TokenStream  *stream,
 
  error:
   ast_array_free (array->children, array->n_children);
-  g_slice_free (Array, array);
+  g_free (array);
 
   return NULL;
 }
@@ -1171,7 +1170,7 @@ tuple_free (AST *ast)
   Tuple *tuple = (Tuple *) ast;
 
   ast_array_free (tuple->children, tuple->n_children);
-  g_slice_free (Tuple, tuple);
+  g_free (tuple);
 }
 
 static AST *
@@ -1189,7 +1188,7 @@ tuple_parse (TokenStream  *stream,
   gboolean first = TRUE;
   Tuple *tuple;
 
-  tuple = g_slice_new (Tuple);
+  tuple = g_new (Tuple, 1);
   tuple->ast.class = &tuple_class;
   tuple->children = NULL;
   tuple->n_children = 0;
@@ -1234,7 +1233,7 @@ tuple_parse (TokenStream  *stream,
 
  error:
   ast_array_free (tuple->children, tuple->n_children);
-  g_slice_free (Tuple, tuple);
+  g_free (tuple);
 
   return NULL;
 }
@@ -1278,7 +1277,7 @@ variant_free (AST *ast)
   Variant *variant = (Variant *) ast;
 
   ast_free (variant->value);
-  g_slice_free (Variant, variant);
+  g_free (variant);
 }
 
 static AST *
@@ -1307,7 +1306,7 @@ variant_parse (TokenStream  *stream,
       return NULL;
     }
 
-  variant = g_slice_new (Variant);
+  variant = g_new (Variant, 1);
   variant->ast.class = &variant_class;
   variant->value = value;
 
@@ -1465,7 +1464,7 @@ dictionary_free (AST *ast)
 
   ast_array_free (dict->keys, n_children);
   ast_array_free (dict->values, n_children);
-  g_slice_free (Dictionary, dict);
+  g_free (dict);
 }
 
 static AST *
@@ -1484,7 +1483,7 @@ dictionary_parse (TokenStream  *stream,
   Dictionary *dict;
   AST *first;
 
-  dict = g_slice_new (Dictionary);
+  dict = g_new (Dictionary, 1);
   dict->ast.class = &dictionary_class;
   dict->keys = NULL;
   dict->values = NULL;
@@ -1562,7 +1561,7 @@ dictionary_parse (TokenStream  *stream,
  error:
   ast_array_free (dict->keys, n_keys);
   ast_array_free (dict->values, n_values);
-  g_slice_free (Dictionary, dict);
+  g_free (dict);
 
   return NULL;
 }
@@ -1626,7 +1625,7 @@ string_free (AST *ast)
   String *string = (String *) ast;
 
   g_free (string->string);
-  g_slice_free (String, string);
+  g_free (string);
 }
 
 /* Accepts exactly @length hexadecimal digits. No leading sign or `0x`/`0X` prefix allowed.
@@ -1773,7 +1772,7 @@ string_parse (TokenStream  *stream,
   str[j++] = '\0';
   g_free (token);
 
-  string = g_slice_new (String);
+  string = g_new (String, 1);
   string->ast.class = &string_class;
   string->string = str;
 
@@ -1814,7 +1813,7 @@ bytestring_free (AST *ast)
   ByteString *string = (ByteString *) ast;
 
   g_free (string->string);
-  g_slice_free (ByteString, string);
+  g_free (string);
 }
 
 static AST *
@@ -1905,7 +1904,7 @@ bytestring_parse (TokenStream  *stream,
   str[j++] = '\0';
   g_free (token);
 
-  string = g_slice_new (ByteString);
+  string = g_new (ByteString, 1);
   string->ast.class = &bytestring_class;
   string->string = str;
 
@@ -2087,7 +2086,7 @@ number_free (AST *ast)
   Number *number = (Number *) ast;
 
   g_free (number->token);
-  g_slice_free (Number, number);
+  g_free (number);
 }
 
 static AST *
@@ -2102,7 +2101,7 @@ number_parse (TokenStream  *stream,
   };
   Number *number;
 
-  number = g_slice_new (Number);
+  number = g_new (Number, 1);
   number->ast.class = &number_class;
   number->token = token_stream_get (stream);
   token_stream_next (stream);
@@ -2141,7 +2140,7 @@ boolean_free (AST *ast)
 {
   Boolean *boolean = (Boolean *) ast;
 
-  g_slice_free (Boolean, boolean);
+  g_free (boolean);
 }
 
 static AST *
@@ -2154,7 +2153,7 @@ boolean_new (gboolean value)
   };
   Boolean *boolean;
 
-  boolean = g_slice_new (Boolean);
+  boolean = g_new (Boolean, 1);
   boolean->ast.class = &boolean_class;
   boolean->value = value;
 
@@ -2210,7 +2209,7 @@ positional_free (AST *ast)
   /* if positional->value is set, just leave it.
    * memory management doesn't matter in case of programmer error.
    */
-  g_slice_free (Positional, positional);
+  g_free (positional);
 }
 
 static AST *
@@ -2230,7 +2229,7 @@ positional_parse (TokenStream  *stream,
   token = token_stream_get (stream);
   g_assert (token[0] == '%');
 
-  positional = g_slice_new (Positional);
+  positional = g_new (Positional, 1);
   positional->ast.class = &positional_class;
   positional->value = g_variant_new_va (token + 1, &endptr, app);
 
@@ -2283,7 +2282,7 @@ typedecl_free (AST *ast)
 
   ast_free (decl->child);
   g_variant_type_free (decl->type);
-  g_slice_free (TypeDecl, decl);
+  g_free (decl);
 }
 
 static AST *
@@ -2399,7 +2398,7 @@ typedecl_parse (TokenStream  *stream,
       return NULL;
     }
 
-  decl = g_slice_new (TypeDecl);
+  decl = g_new (TypeDecl, 1);
   decl->ast.class = &typedecl_class;
   decl->type = type;
   decl->child = child;

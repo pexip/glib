@@ -124,7 +124,7 @@ value_array_grow (GValueArray *value_array,
 GValueArray*
 g_value_array_new (guint n_prealloced)
 {
-  GValueArray *value_array = g_slice_new (GValueArray);
+  GValueArray *value_array = g_new (GValueArray, 1);
 
   value_array->n_values = 0;
   value_array->n_prealloced = 0;
@@ -158,7 +158,7 @@ g_value_array_free (GValueArray *value_array)
 	g_value_unset (value);
     }
   g_free (value_array->values);
-  g_slice_free (GValueArray, value_array);
+  g_free (value_array);
 }
 
 /**
@@ -180,7 +180,7 @@ g_value_array_copy (const GValueArray *value_array)
 
   g_return_val_if_fail (value_array != NULL, NULL);
 
-  new_array = g_slice_new (GValueArray);
+  new_array = g_new (GValueArray, 1);
   new_array->n_values = 0;
   new_array->values = NULL;
   new_array->n_prealloced = 0;

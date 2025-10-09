@@ -498,7 +498,11 @@ static inline void
 poll_rec_list_free (GMainContext *context,
 		    GPollRec     *list)
 {
-  g_slice_free_chain (GPollRec, list, next);
+  while (list) {
+   GPollRec *next = list->next;
+   g_free (list);
+   list = next;
+  }
 }
 
 /**
@@ -594,7 +598,7 @@ retry_decrement:
     {
       list = sl_iter->data;
       sl_iter = sl_iter->next;
-      g_slice_free (GSourceList, list);
+      g_free (list);
     }
 
   g_hash_table_remove_all (context->sources);
@@ -974,7 +978,7 @@ g_source_new (GSourceFuncs *source_funcs,
   g_return_val_if_fail (struct_size >= sizeof (GSource), NULL);
   
   source = (GSource*) g_malloc0 (struct_size);
-  source->priv = g_slice_new0 (GSourcePrivate);
+  source->priv = g_new0 (GSourcePrivate, 1);
   source->source_funcs = source_funcs;
   g_atomic_int_set (&source->ref_count, 1);
   
@@ -1128,7 +1132,7 @@ find_source_list_for_priority (GMainContext *context,
 	  if (!create)
 	    return NULL;
 
-	  source_list = g_slice_new0 (GSourceList);
+	  source_list = g_new0 (GSourceList, 1);
           source_list->link.data = source_list;
 	  source_list->priority = priority;
           g_queue_insert_before_link (&context->source_lists,
@@ -1141,7 +1145,7 @@ find_source_list_for_priority (GMainContext *context,
   if (!create)
     return NULL;
 
-  source_list = g_slice_new0 (GSourceList);
+  source_list = g_new0 (GSourceList, 1);
   source_list->link.data = source_list;
   source_list->priority = priority;
   g_queue_push_tail_link (&context->source_lists, &source_list->link);
@@ -1214,7 +1218,7 @@ source_remove_from_context (GSource      *source,
   if (source_list->head == NULL)
     {
       g_queue_unlink (&context->source_lists, &source_list->link);
-      g_slice_free (GSourceList, source_list);
+      g_free (source_list);
     }
 }
 
@@ -2491,7 +2495,7 @@ retry_beginning:
           g_source_unref_internal (child_source, context, TRUE);
         }
 
-      g_slice_free (GSourcePrivate, source->priv);
+      g_free (source->priv);
       source->priv = NULL;
 
       g_free (source);
@@ -4915,7 +4919,7 @@ g_main_context_add_poll_unlocked (GMainContext *context,
 				  GPollFD      *fd)
 {
   GPollRec *prevrec, *nextrec;
-  GPollRec *newrec = g_slice_new (GPollRec);
+  GPollRec *newrec = g_new (GPollRec, 1);
 
   /* This file descriptor may be checked before we ever poll */
   fd->revents = 0;
@@ -5000,7 +5004,7 @@ g_main_context_remove_poll_unlocked (GMainContext *context,
 	  if (nextrec != NULL)
 	    nextrec->prev = prevrec;
 
-	  g_slice_free (GPollRec, pollrec);
+	  g_free (pollrec);
 
 	  context->n_poll_records--;
 	  break;

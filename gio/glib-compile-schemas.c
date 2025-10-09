@@ -64,7 +64,7 @@ enum_state_free (gpointer data)
   EnumState *state = data;
 
   g_string_free (state->strinfo, TRUE);
-  g_slice_free (EnumState, state);
+  g_free (state);
 }
 
 static EnumState *
@@ -72,7 +72,7 @@ enum_state_new (gboolean is_flags)
 {
   EnumState *state;
 
-  state = g_slice_new (EnumState);
+  state = g_new (EnumState, 1);
   state->strinfo = g_string_new (NULL);
   state->is_flags = is_flags;
 
@@ -208,7 +208,7 @@ key_state_new (const gchar *type_string,
 {
   KeyState *state;
 
-  state = g_slice_new0 (KeyState);
+  state = g_new0 (KeyState, 1);
   state->type = g_variant_type_new (type_string);
   state->have_gettext_domain = gettext_domain != NULL;
   state->is_enum = is_enum;
@@ -230,7 +230,7 @@ key_state_override (KeyState    *state,
 {
   KeyState *copy;
 
-  copy = g_slice_new0 (KeyState);
+  copy = g_new0 (KeyState, 1);
   copy->type = g_variant_type_copy (state->type);
   copy->have_gettext_domain = gettext_domain != NULL;
   copy->strinfo = g_string_new_len (state->strinfo->str,
@@ -253,7 +253,7 @@ key_state_new_child (const gchar *child_schema)
 {
   KeyState *state;
 
-  state = g_slice_new0 (KeyState);
+  state = g_new0 (KeyState, 1);
   state->child_schema = g_strdup (child_schema);
 
   return state;
@@ -779,7 +779,7 @@ key_state_free (gpointer data)
   if (state->desktop_overrides)
     g_variant_dict_unref (state->desktop_overrides);
 
-  g_slice_free (KeyState, state);
+  g_free (state);
 }
 
 /* Key name validity {{{1 */
@@ -872,7 +872,7 @@ schema_state_new (const gchar  *path,
 {
   SchemaState *state;
 
-  state = g_slice_new (SchemaState);
+  state = g_new (SchemaState, 1);
   state->path = g_strdup (path);
   state->gettext_domain = g_strdup (gettext_domain);
   state->extends = extends;
@@ -894,7 +894,7 @@ schema_state_free (gpointer data)
   g_free (state->extends_name);
   g_free (state->list_of);
   g_hash_table_unref (state->keys);
-  g_slice_free (SchemaState, state);
+  g_free (state);
 }
 
 static void

@@ -1907,7 +1907,7 @@ send_message_data_free (SendMessageData *data)
   g_assert (data->timeout_source == NULL);
   g_assert (data->cancellable_handler_id == 0);
 
-  g_slice_free (SendMessageData, data);
+  g_free (data);
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
@@ -2067,7 +2067,7 @@ g_dbus_connection_send_message_with_reply_unlocked (GDBusConnection     *connect
   if (timeout_msec == -1)
     timeout_msec = 25 * 1000;
 
-  data = g_slice_new0 (SendMessageData);
+  data = g_new0 (SendMessageData, 1);
   task = g_task_new (connection, cancellable, callback, user_data);
   g_task_set_source_tag (task,
                          g_dbus_connection_send_message_with_reply_unlocked);
@@ -6437,7 +6437,7 @@ call_state_free (CallState *state)
 
   if (state->fd_list != NULL)
     g_object_unref (state->fd_list);
-  g_slice_free (CallState, state);
+  g_free (state);
 }
 
 /* called in any thread, with the connection's lock not held */
@@ -6548,7 +6548,7 @@ g_dbus_connection_call_internal (GDBusConnection        *connection,
       CallState *state;
       GTask *task;
 
-      state = g_slice_new0 (CallState);
+      state = g_new0 (CallState, 1);
       state->method_name = g_strjoin (".", interface_name, method_name, NULL);
 
       if (reply_type == NULL)
