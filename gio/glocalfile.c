@@ -81,6 +81,7 @@
 #include <windows.h>
 #include <io.h>
 #include <direct.h>
+#include <shellapi.h>
 
 #ifndef FILE_READ_ONLY_VOLUME
 #define FILE_READ_ONLY_VOLUME           0x00080000
