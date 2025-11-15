@@ -522,7 +522,7 @@ g_hash_table_remove_node (GHashTable *hash_table,
 static void
 g_hash_table_setup_storage (GHashTable *hash_table)
 {
-  gboolean small = FALSE;
+  gboolean small_arr = FALSE;
 
   /* We want to use small arrays only if:
    *   - we are running on a system where that makes sense (64 bit); and
@@ -530,18 +530,18 @@ g_hash_table_setup_storage (GHashTable *hash_table)
    */
 
 #ifdef USE_SMALL_ARRAYS
-  small = TRUE;
+  small_arr = TRUE;
 
 # ifdef ENABLE_VALGRIND
   if (RUNNING_ON_VALGRIND)
-    small = FALSE;
+    small_arr = FALSE;
 # endif
 #endif
 
   g_hash_table_set_shift (hash_table, HASH_TABLE_MIN_SHIFT);
 
-  hash_table->have_big_keys = !small;
-  hash_table->have_big_values = !small;
+  hash_table->have_big_keys = !small_arr;
+  hash_table->have_big_values = !small_arr;
 
   hash_table->keys   = g_hash_table_realloc_key_or_value_array (NULL, hash_table->size, hash_table->have_big_keys);
   hash_table->values = hash_table->keys;
