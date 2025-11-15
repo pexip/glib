@@ -198,6 +198,7 @@
 
 #if defined G_OS_WIN32
 #include <windows.h>
+#include <shellapi.h>
 #endif
 
 #define TRANSLATE(group, str) (((group)->translate_func ? (* (group)->translate_func) ((str), (group)->translate_data) : (str)))

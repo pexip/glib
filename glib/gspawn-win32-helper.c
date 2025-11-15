@@ -43,6 +43,7 @@
 #include "gspawn-win32.c"	/* For shared definitions */
 #include "glib/glib-private.h"
 
+#include <shellapi.h>
 
 static void
 write_err_and_exit (gint    fd,
