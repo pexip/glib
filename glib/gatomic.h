@@ -591,7 +591,8 @@ G_END_DECLS
 #if defined(G_PLATFORM_WIN32)
 
 #include <intrin.h>
-#pragma intrinsic(__faststorefence)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #pragma intrinsic(_InterlockedCompareExchange)
 #pragma intrinsic(_InterlockedExchange)
 #pragma intrinsic(_InterlockedIncrement)
@@ -664,10 +665,10 @@ _gInterlockedXor (volatile guint *atomic,
  * http://msdn.microsoft.com/en-us/library/ms684122(v=vs.85).aspx
  */
 #define g_atomic_int_get(atomic) \
-  (__faststorefence (), *(const long volatile *) (atomic))
+  (MemoryBarrier (), *(const long volatile *) (atomic))
 
 #define g_atomic_int_set(atomic, newval) \
-  ( *((long volatile *) (atomic)) = (long) (newval), __faststorefence ())
+  ( *((long volatile *) (atomic)) = (long) (newval), MemoryBarrier ())
 
 #define g_atomic_int_inc(atomic) \
   (_InterlockedIncrement ((long volatile *) (atomic)))
@@ -699,10 +700,10 @@ _gInterlockedXor (volatile guint *atomic,
   (_InterlockedXor ((long volatile *) (atomic), (long) (val)))
 
 #define g_atomic_pointer_get(atomic) \
-  (__faststorefence (), *(const void * volatile *) (atomic))
+  (MemoryBarrier (), *(const void * volatile *) (atomic))
 
 #define g_atomic_pointer_set(atomic, newval) \
-  ( *((void * volatile *) (atomic)) = (void *) (newval), __faststorefence ())
+  ( *((void * volatile *) (atomic)) = (void *) (newval), MemoryBarrier ())
 
 #define g_atomic_pointer_compare_and_exchange(atomic, oldval, newval) \
   (_InterlockedCompareExchangePointer ((void * volatile *) (atomic), \
