@@ -32,6 +32,7 @@
 #include <windows.h>
 #include <shlobj.h>
 #include <io.h> /* for _get_osfhandle */
+#include <winioctl.h>
 #endif
 
 #define TEST_NAME			"Prilis zlutoucky kun"
