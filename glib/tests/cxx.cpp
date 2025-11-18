@@ -213,7 +213,7 @@ test_atomic_pointer_compare_and_exchange_full (void)
   g_test_message ("Test that g_atomic_pointer_compare_and_exchange_full() with a "
                   "non-void* pointer doesn’t have any compiler warnings in C++ mode");
 
-  g_assert_true (g_atomic_pointer_compare_and_exchange_full (&atomic_string, (gpointer)str1, (gpointer)str2, (gpointer)&old));
+  g_assert_true (g_atomic_pointer_compare_and_exchange_full ((void **)&atomic_string, (gpointer)str1, (gpointer)str2, (void **)&old));
   g_assert_true (atomic_string == str2);
   g_assert_true (old == str1);
 }
@@ -254,7 +254,7 @@ test_atomic_pointer_exchange (void)
   g_test_message ("Test that g_atomic_pointer_exchange() with a "
                   "non-void* pointer doesn’t have any compiler warnings in C++ mode");
 
-  g_assert_true (g_atomic_pointer_exchange (&atomic_string, (gpointer)str2) == str1);
+  g_assert_true (g_atomic_pointer_exchange ((void **)&atomic_string, (gpointer)str2) == str1);
   g_assert_true (atomic_string == str2);
 }
 
