@@ -46,9 +46,9 @@ static GType my_test_get_type (void);
 static gint stopping;  /* (atomic) */
 
 static void my_test_class_init (GTestClass * klass,
-                                void       * class_data);
-static void my_test_init (GTest * test,
-                          void  * class_data);
+                                gpointer     class_data);
+static void my_test_init (GTest  * test,
+                          gpointer g_class);
 static void my_test_dispose (GObject * object);
 
 static GObjectClass *parent_class = NULL;
@@ -79,8 +79,8 @@ my_test_get_type (void)
 }
 
 static void
-my_test_class_init (GTestClass * klass,
-                    G_GNUC_UNUSED void * class_data)
+my_test_class_init (GTestClass           * klass,
+                    G_GNUC_UNUSED gpointer class_data)
 {
   GObjectClass *gobject_class;
 
@@ -91,10 +91,10 @@ my_test_class_init (GTestClass * klass,
 }
 
 static void
-my_test_init (GTest * test,
-              G_GNUC_UNUSED void * class_data)
+my_test_init (GTest                * test,
+              G_GNUC_UNUSED gpointer g_class)
 {
-  g_test_message ("init %p\n", test);
+  g_test_message ("init %p\n", (gpointer) test);
 }
 
 static void
@@ -104,7 +104,7 @@ my_test_dispose (GObject * object)
 
   test = MY_TEST (object);
 
-  g_test_message ("dispose %p!\n", test);
+  g_test_message ("dispose %p!\n", (gpointer) test);
 
   G_OBJECT_CLASS (parent_class)->dispose (object);
 }
