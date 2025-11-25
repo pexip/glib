@@ -438,6 +438,7 @@ emit_network_changed (gpointer user_data)
 
   is_available = (monitor->priv->have_ipv4_default_route ||
                   monitor->priv->have_ipv6_default_route);
+
   if (monitor->priv->is_available != is_available)
     {
       monitor->priv->is_available = is_available;
@@ -445,6 +446,7 @@ emit_network_changed (gpointer user_data)
     }
 
   g_signal_emit (monitor, network_changed_signal, 0, is_available);
+  g_debug ("emit_network_changed, available:%d", is_available);
 
   g_source_unref (monitor->priv->network_changed_source);
   monitor->priv->network_changed_source = NULL;
@@ -558,7 +560,7 @@ g_network_monitor_base_remove_network (GNetworkMonitorBase *monitor,
     }
 
   queue_network_changed (monitor);
-}
+} 
 
 /**
  * g_network_monitor_base_set_networks:
@@ -576,10 +578,16 @@ g_network_monitor_base_set_networks (GNetworkMonitorBase  *monitor,
 {
   int i;
 
+  g_debug ("Adding %d networks", length);
+
   g_hash_table_remove_all (monitor->priv->networks);
   monitor->priv->have_ipv4_default_route = FALSE;
   monitor->priv->have_ipv6_default_route = FALSE;
 
-  for (i = 0; i < length; i++)
-    g_network_monitor_base_add_network (monitor, networks[i]);
+  if (length > 0){
+    for (i = 0; i < length; i++)
+      g_network_monitor_base_add_network (monitor, networks[i]);    
+  } else {
+    queue_network_changed (monitor);    
+  }
 }

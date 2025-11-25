@@ -20,6 +20,41 @@
  * Boston, MA 02111-1307, USA.
  */
 
+/* The logic here used to be based on NotifyRouteChange2 callbacks, which really didn't do too good a job. Problem with that approach
+   is that the routing table returned by GetIpForwardTable2 does not reflect interface or connection state - if you unplug the network 
+   cable or disconnect from a wifi, the old default routes does not get removed, it only changes when we for some reason receive a new 
+   default route (eg jumping between WIFI networks). Because of this (somewhat strage behavior in the windows API), NotifyRouteChange2
+   does not fire when network connectivity is lost.
+
+   The new approach here, is using a combination of NotifyRouteChange2() and NotifyNetworkConnectivityHintChange(), and base our updates of the 
+   g_network_monitor_base_set_networks route mapping on the connection state hints:
+
+   * State: NetworkConnectivityLevelHintUnknown: 
+     Desc: Specifies a hint for an unknown level of connectivity. There is a short window of time during Windows (or application container) boot when this value might be returned.
+     HintCbAction: Clear the gnetworkmonitorbase routetable.
+     RouteCbAction: Ignore.
+   * State: NetworkConnectivityLevelHintNone: 
+     Desc: Specifies a hint for no connectivity.
+     HintCbAction: Clear the gnetworkmonitorbase routetable.
+     RouteCbAction: Ignore.
+   * State: NetworkConnectivityLevelHintLocalAccess: 
+     Desc: Specifies a hint for local network access only.
+     HintCbAction: Populate route table, but filter out any default routes.
+     RouteCbAction: Update local routes only, ignore default routes.
+   * State: NetworkConnectivityLevelHintInternetAccess: 
+     Desc: Specifies a hint for local and internet access.
+     HintCbAction: Populate full route table.
+     RouteCbAction: Update all routess.
+   * State: NetworkConnectivityLevelHintConstrainedInternetAccess: 
+     Desc: Specifies a hint for limited internet access. This value indicates captive portal connectivity, where local access to a web portal is provided, but access to the internet requires that specific credentials are provided via the portal. This level of connectivity is generally encountered when using connections hosted in public locations (for example, coffee shops and book stores). This doesn't guarantee detection of a captive portal. You should be aware that when Windows reports the connectivity level hint as NetworkConnectivityLevelHintLocalAccess, your application's network requests might be redirected, and thus receive a different response than expected. Other protocols might also be impacted; for example, HTTPS might be redirected, and fail authentication.
+     HintCbAction: Populate full route table.
+     RouteCbAction: Update all routess.
+   * State: NetworkConnectivityLevelHintHidden: 
+     Desc: Specifies a hint for a network interface that's hidden from normal connectivity (and is not, by default, accessible to applications). This could be because no packets are allowed at all over that network (for example, the adapter flags itself NCF_HIDDEN), or (by default) routes are ignored on that interface (for example, a cellular network is hidden when WiFi is connected).
+     HintCbAction: Clear the gnetworkmonitorbase routetable.
+     RouteCbAction: Ignore.
+*/
+
 #include "config.h"
 
 #include <errno.h>
@@ -55,7 +90,13 @@ struct _GWin32NetworkMonitorPrivate
   GError *init_error;
   GMainContext *main_context;
   GSource *route_change_source;
+  GSource *connectivity_hint_source;
+
+  GMutex mutex; /* For protecting the hint */
+  NL_NETWORK_CONNECTIVITY_HINT hint;
+
   HANDLE handle;
+  HANDLE handle_conn_hints;
 };
 
 #define g_win32_network_monitor_get_type _g_win32_network_monitor_get_type
@@ -77,11 +118,34 @@ g_win32_network_monitor_init (GWin32NetworkMonitor *win)
   win->priv = g_win32_network_monitor_get_instance_private (win);
 }
 
+static const gchar * g_wind32_network_monitor_connectivity_level_to_string (NL_NETWORK_CONNECTIVITY_LEVEL_HINT level)
+{
+  switch (level)
+    {
+      case NetworkConnectivityLevelHintUnknown:
+        return "Unknown";
+      case NetworkConnectivityLevelHintNone:
+        return "None";
+      case NetworkConnectivityLevelHintLocalAccess:
+        return "LocalAccess";
+      case NetworkConnectivityLevelHintInternetAccess:
+        return "InternetAccess";
+      case NetworkConnectivityLevelHintConstrainedInternetAccess:
+        return "ConstrainedInternetAccess";
+      case NetworkConnectivityLevelHintHidden:
+        return "Hidden";
+      default:
+        return "Unknown";
+    }
+  return "Unknown";
+}
+
 static gboolean
 win_network_monitor_get_ip_info (IP_ADDRESS_PREFIX  prefix,
                                  GSocketFamily     *family,
                                  const guint8     **dest,
-                                 gsize             *len)
+                                 gsize             *len,
+                                 gboolean          *is_default_route)
 {
   switch (prefix.Prefix.si_family)
     {
@@ -91,11 +155,22 @@ win_network_monitor_get_ip_info (IP_ADDRESS_PREFIX  prefix,
         *family = G_SOCKET_FAMILY_IPV4;
         *dest = (guint8 *) &prefix.Prefix.Ipv4.sin_addr;
         *len = prefix.PrefixLength;
+        *is_default_route = (prefix.Prefix.Ipv4.sin_addr.s_addr == (long)0x0 && 
+                             prefix.PrefixLength == 0);
         break;
       case AF_INET6:
         *family = G_SOCKET_FAMILY_IPV6;
         *dest = (guint8 *) &prefix.Prefix.Ipv6.sin6_addr;
         *len = prefix.PrefixLength;
+        *is_default_route = (prefix.Prefix.Ipv6.sin6_addr.u.Word[0] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[1] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[2] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[3] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[4] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[5] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[6] == (USHORT)0x0 &&
+                             prefix.Prefix.Ipv6.sin6_addr.u.Word[7] == (USHORT)0x0 &&
+                             prefix.PrefixLength == 0);
         break;
       default:
         return FALSE;
@@ -123,8 +198,40 @@ get_network_mask (GSocketFamily  family,
   return network;
 }
 
+static char * win_network_monitor_forward_row_to_string (MIB_IPFORWARD_ROW2 *route)
+{
+  char addr[INET6_ADDRSTRLEN] = "<cannot parse>";
+  char nexthop[INET6_ADDRSTRLEN] = "<cannot parse>";
+  char af[16];
+
+  switch (route->DestinationPrefix.Prefix.si_family) {
+  case AF_UNSPEC:
+      // Fallthrough, and parse as AF_INET
+  case AF_INET:
+      snprintf(af, sizeof(af)-1, "INET");
+      inet_ntop(AF_INET, &route->DestinationPrefix.Prefix.Ipv4.sin_addr, addr, INET6_ADDRSTRLEN);
+      inet_ntop(AF_INET, &route->NextHop.Ipv4.sin_addr, nexthop, INET6_ADDRSTRLEN);
+      break;
+  case AF_INET6:
+      snprintf(af, sizeof(af)-1, "INET6");
+      inet_ntop(AF_INET6, &route->DestinationPrefix.Prefix.Ipv6.sin6_addr, addr, INET6_ADDRSTRLEN);
+      inet_ntop(AF_INET6, &route->NextHop.Ipv6.sin6_addr, nexthop, INET6_ADDRSTRLEN);
+      break;
+  default:
+      break;
+  }
+
+  return g_strdup_printf ("%s addr:%s prefixlen:%u nexthop:%s siteprefixlen:%u ifidx:%d ifluid:%d ValidLifetime:%lu PreferredLifetime:%lu Metric:%lu  proto:%d loopback:%d auto:%d publish:%d immortal:%d, age:%lu origin:%d", 
+    af,
+    addr, route->DestinationPrefix.PrefixLength, nexthop, route->SitePrefixLength,
+    route->InterfaceIndex, route->InterfaceLuid,
+    route->ValidLifetime, route->PreferredLifetime,
+    route->Metric, route->Protocol, route->Loopback, route->AutoconfigureAddress, route->Publish, route->Immortal, route->Age, route->Origin);
+}
+
 static gboolean
 win_network_monitor_process_table (GWin32NetworkMonitor  *win,
+                                   gboolean local_routes_only,
                                    GError                 **error)
 {
   DWORD ret = 0;
@@ -142,6 +249,8 @@ win_network_monitor_process_table (GWin32NetworkMonitor  *win,
       return FALSE;
     }
 
+  g_debug ("Read %d routes from table", routes->NumEntries);
+
   networks = g_ptr_array_new_full (routes->NumEntries, g_object_unref);
   for (i = 0; i < routes->NumEntries; i++)
     {
@@ -149,16 +258,30 @@ win_network_monitor_process_table (GWin32NetworkMonitor  *win,
       const guint8 *dest;
       gsize len;
       GSocketFamily family;
+      gboolean is_default_route;
 
       route = routes->Table + i;
 
-      if (!win_network_monitor_get_ip_info (route->DestinationPrefix, &family, &dest, &len))
+      char * debug_str = win_network_monitor_forward_row_to_string(route);
+
+      if (!win_network_monitor_get_ip_info (route->DestinationPrefix, &family, &dest, &len, &is_default_route)){
+        g_warning ("Skipping unparsable entry: %s", debug_str);
         continue;
+      }
+
+      if (local_routes_only && is_default_route) {
+        g_warning ("Skipping default route: %s", debug_str);
+        continue;
+      }
 
       network = get_network_mask (family, dest, len);
-      if (network == NULL)
+      if (network == NULL) {
+        g_warning ("Skipping route with no network: %s", debug_str);
         continue;
+      }
 
+      g_debug ("Adding route: %s", debug_str);
+      g_free (debug_str);
       g_ptr_array_add (networks, network);
     }
 
@@ -168,6 +291,35 @@ win_network_monitor_process_table (GWin32NetworkMonitor  *win,
 
   return TRUE;
 }
+
+static void win_network_monitor_init_clear_networks_table (GWin32NetworkMonitor  *win)
+{
+  g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (win),
+                                       (GInetAddressMask **) NULL,
+                                       0);
+}
+
+static gboolean win_network_monitor_check_forward_table_accessible (GWin32NetworkMonitor  *win, GError **error)
+{
+  DWORD ret = 0;
+  MIB_IPFORWARD_TABLE2 *routes = NULL;
+
+  ret = GetIpForwardTable2 (AF_UNSPEC, &routes);
+  if (ret != ERROR_SUCCESS)
+  {
+    g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                 "GetIpForwardTable2 () failed: %ld", ret);
+
+    return FALSE;
+  }
+
+  if (routes != NULL) {
+    FreeMibTable(routes);
+  }
+
+  return TRUE;
+}
+
 
 static void
 add_network (GWin32NetworkMonitor *win,
@@ -207,6 +359,11 @@ typedef struct {
   GWin32NetworkMonitor *win;
 } RouteData;
 
+typedef struct {
+  NL_NETWORK_CONNECTIVITY_HINT hint;
+  GWin32NetworkMonitor *win;
+} ConnectivityHintData;
+
 static gboolean
 win_network_monitor_invoke_route_changed (gpointer user_data)
 {
@@ -214,25 +371,68 @@ win_network_monitor_invoke_route_changed (gpointer user_data)
   RouteData *route_data = user_data;
   const guint8 *dest;
   gsize len;
+  gboolean is_default_route;
 
-  switch (route_data->type)
+  g_mutex_lock (&route_data->win->priv->mutex);
+
+  gboolean process_route = TRUE;
+  gboolean local_routes_only = FALSE;
+
+  switch (route_data->win->priv->hint.ConnectivityLevel)
     {
-      case MibDeleteInstance:
-        if (!win_network_monitor_get_ip_info (route_data->route->DestinationPrefix, &family, &dest, &len))
-          break;
-
-        remove_network (route_data->win, family, dest, len);
+      case NetworkConnectivityLevelHintUnknown:
+        process_route = FALSE;
         break;
-      case MibAddInstance:
-        if (!win_network_monitor_get_ip_info (route_data->route->DestinationPrefix, &family, &dest, &len))
-            break;
-
-        add_network (route_data->win, family, dest, len);
+      case NetworkConnectivityLevelHintNone:
+        process_route = FALSE;
         break;
-      case MibInitialNotification:
-      default:
+      case NetworkConnectivityLevelHintLocalAccess:
+        local_routes_only = TRUE;
+        break;
+      case NetworkConnectivityLevelHintInternetAccess:
+        break;
+      case NetworkConnectivityLevelHintConstrainedInternetAccess:
+        break;
+      case NetworkConnectivityLevelHintHidden:
+        process_route = FALSE;
         break;
     }
+
+  if (process_route)
+    {
+      switch (route_data->type)
+        {
+          case MibDeleteInstance:
+            if (!win_network_monitor_get_ip_info (route_data->route->DestinationPrefix, &family, &dest, &len, &is_default_route))
+              break;
+            if (local_routes_only && is_default_route){
+              g_debug ("Skip default route removal!");
+              break;
+            }
+            g_debug ("process route removal!");
+            remove_network (route_data->win, family, dest, len);
+            break;
+          case MibAddInstance:
+            if (!win_network_monitor_get_ip_info (route_data->route->DestinationPrefix, &family, &dest, &len, &is_default_route))
+                break;
+            if (local_routes_only && is_default_route){
+              g_debug ("Skip default route addition!");
+              break;
+            }
+            g_debug ("process route addition!");
+            add_network (route_data->win, family, dest, len);
+            break;
+          case MibInitialNotification:
+          default:
+            break;
+        }
+    }
+  else
+    {
+        g_debug ("Ignoring process route change!");
+    }
+ 
+  g_mutex_unlock (&route_data->win->priv->mutex);
 
   return G_SOURCE_REMOVE;
 }
@@ -261,6 +461,72 @@ win_network_monitor_route_changed_cb (PVOID                 context,
 }
 
 static gboolean
+win_network_monitor_invoke_connectivity_hint (gpointer user_data)
+{
+  GSocketFamily family;
+  ConnectivityHintData * connectivity_hint_data = user_data;
+
+  g_mutex_lock (&connectivity_hint_data->win->priv->mutex);
+  if (memcmp (&connectivity_hint_data->win->priv->hint, &connectivity_hint_data->hint, sizeof(NL_NETWORK_CONNECTIVITY_HINT)) != 0)
+    {
+      g_debug ("Connectivity state change %s -> %s", 
+        g_wind32_network_monitor_connectivity_level_to_string(connectivity_hint_data->win->priv->hint.ConnectivityLevel), 
+        g_wind32_network_monitor_connectivity_level_to_string(connectivity_hint_data->hint.ConnectivityLevel));
+      GError * error = NULL;
+      switch (connectivity_hint_data->hint.ConnectivityLevel)
+        {
+          case NetworkConnectivityLevelHintUnknown:
+            win_network_monitor_init_clear_networks_table (connectivity_hint_data->win);
+            break;
+          case NetworkConnectivityLevelHintNone:
+            win_network_monitor_init_clear_networks_table (connectivity_hint_data->win);
+            break;
+          case NetworkConnectivityLevelHintLocalAccess:
+            win_network_monitor_process_table (connectivity_hint_data->win, TRUE, &error);
+            break;
+          case NetworkConnectivityLevelHintInternetAccess:
+            win_network_monitor_process_table (connectivity_hint_data->win, FALSE, &error);
+            break;
+          case NetworkConnectivityLevelHintConstrainedInternetAccess:
+            win_network_monitor_process_table (connectivity_hint_data->win, FALSE, &error);
+            break;
+          case NetworkConnectivityLevelHintHidden:
+            win_network_monitor_init_clear_networks_table (connectivity_hint_data->win);
+            break;
+        }
+      if (error != NULL) {
+        g_warning ("Failed to update routing table! %s", error->message);
+        g_clear_error (&error);
+      }
+      connectivity_hint_data->win->priv->hint = connectivity_hint_data->hint;
+    }
+
+  g_mutex_unlock (&connectivity_hint_data->win->priv->mutex);
+
+  return G_SOURCE_REMOVE;
+}
+
+static VOID WINAPI
+win_network_monitor_connectivity_hint_cb (PVOID context, NL_NETWORK_CONNECTIVITY_HINT hint)
+{
+  GWin32NetworkMonitor *win = context;
+  ConnectivityHintData *connectivity_hint_data;
+
+  connectivity_hint_data = g_new0 (ConnectivityHintData, 1);
+  connectivity_hint_data->hint = hint;
+  connectivity_hint_data->win = win;
+
+  win->priv->connectivity_hint_source = g_idle_source_new ();
+  g_source_set_priority (win->priv->connectivity_hint_source, G_PRIORITY_DEFAULT);
+  g_source_set_callback (win->priv->connectivity_hint_source,
+                         win_network_monitor_invoke_connectivity_hint,
+                         connectivity_hint_data,
+                         g_free);
+
+  g_source_attach (win->priv->connectivity_hint_source, win->priv->main_context);
+}
+
+static gboolean
 g_win32_network_monitor_initable_init (GInitable     *initable,
                                        GCancellable  *cancellable,
                                        GError       **error)
@@ -273,17 +539,25 @@ g_win32_network_monitor_initable_init (GInitable     *initable,
     {
       win->priv->main_context = g_main_context_ref_thread_default ();
 
-      /* Read current IP routing table. */
-      read = win_network_monitor_process_table (win, &win->priv->init_error);
-      if (read)
+      /* Initialize the IP routing table to NULL initially - decide if this is needed! */
+      win_network_monitor_init_clear_networks_table (win);
+      if (win_network_monitor_check_forward_table_accessible (win, &win->priv->init_error))
         {
           /* Register for IPv4 and IPv6 route updates. */
           status = NotifyRouteChange2 (AF_UNSPEC, (PIPFORWARD_CHANGE_CALLBACK) win_network_monitor_route_changed_cb, win, FALSE, &win->priv->handle);
-          if (status != NO_ERROR)
+          if (status != NO_ERROR){
             g_set_error (&win->priv->init_error, G_IO_ERROR, G_IO_ERROR_FAILED,
                          "NotifyRouteChange2() error: %ld", status);
-        }
+          }
 
+          /* Register for IPv4 and IPv6 connectivity hints. */
+          status = NotifyNetworkConnectivityHintChange ((PNETWORK_CONNECTIVITY_HINT_CHANGE_CALLBACK) win_network_monitor_connectivity_hint_cb, win, TRUE, &win->priv->handle_conn_hints);
+          if (status != NO_ERROR){
+            g_set_error (&win->priv->init_error, G_IO_ERROR, G_IO_ERROR_FAILED,
+                         "NotifyNetworkConnectivityHintChange() error: %ld", status);
+          }
+        }
+      g_mutex_init (&win->priv->mutex);
       win->priv->initialized = TRUE;
     }
 
@@ -305,6 +579,8 @@ g_win32_network_monitor_finalize (GObject *object)
   /* Cancel notification event */
   if (win->priv->handle)
     CancelMibChangeNotify2 (win->priv->handle);
+  if (win->priv->handle_conn_hints)
+    CancelMibChangeNotify2 (win->priv->handle_conn_hints);
 
   g_clear_error (&win->priv->init_error);
 
@@ -313,8 +589,14 @@ g_win32_network_monitor_finalize (GObject *object)
       g_source_destroy (win->priv->route_change_source);
       g_source_unref (win->priv->route_change_source);
     }
+  if (win->priv->connectivity_hint_source != NULL)
+    {
+      g_source_destroy (win->priv->connectivity_hint_source);
+      g_source_unref (win->priv->connectivity_hint_source);
+    }
 
   g_main_context_unref (win->priv->main_context);
+  g_mutex_clear (&win->priv->mutex);
 
   G_OBJECT_CLASS (g_win32_network_monitor_parent_class)->finalize (object);
 }
