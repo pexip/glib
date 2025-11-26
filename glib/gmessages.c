@@ -2093,8 +2093,8 @@ g_log_writer_supports_color (gint output_fd)
    *        perhaps using WriteConsoleOutput or SetConsoleTextAttribute
    *        (bug 775468), on standard Windows consoles, such as cmd.exe
    */
-  if (!result)
-    result = win32_is_pipe_tty (output_fd);
+  // if (!result)
+  //   result = win32_is_pipe_tty (output_fd);
 
 reset_invalid_param_handler:
   g_win32_pop_invalid_parameter_handler (&handler);
