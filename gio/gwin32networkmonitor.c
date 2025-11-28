@@ -155,26 +155,21 @@ win_network_monitor_get_ip_info (IP_ADDRESS_PREFIX  prefix,
         *family = G_SOCKET_FAMILY_IPV4;
         *dest = (guint8 *) &prefix.Prefix.Ipv4.sin_addr;
         *len = prefix.PrefixLength;
-        *is_default_route = (prefix.Prefix.Ipv4.sin_addr.s_addr == (long)0x0 && 
-                             prefix.PrefixLength == 0);
         break;
       case AF_INET6:
         *family = G_SOCKET_FAMILY_IPV6;
         *dest = (guint8 *) &prefix.Prefix.Ipv6.sin6_addr;
         *len = prefix.PrefixLength;
-        *is_default_route = (prefix.Prefix.Ipv6.sin6_addr.u.Word[0] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[1] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[2] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[3] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[4] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[5] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[6] == (USHORT)0x0 &&
-                             prefix.Prefix.Ipv6.sin6_addr.u.Word[7] == (USHORT)0x0 &&
-                             prefix.PrefixLength == 0);
         break;
       default:
         return FALSE;
     }
+
+  g_assert (*dest);
+  g_assert (*family);
+  GInetAddress *dest_addr = g_inet_address_new_from_bytes (*dest, *family);
+  *is_default_route = prefix.PrefixLength == 0 && g_inet_address_get_is_any(dest_addr);
+  g_object_unref (dest_addr);
 
   return TRUE;
 }
