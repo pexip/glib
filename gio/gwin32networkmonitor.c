@@ -84,6 +84,15 @@ static GInitableIface *initable_parent_iface;
 static void g_win32_network_monitor_iface_init (GNetworkMonitorInterface *iface);
 static void g_win32_network_monitor_initable_iface_init (GInitableIface *iface);
 
+enum
+{
+  PROP_0,
+
+  PROP_NETWORK_AVAILABLE,
+  PROP_NETWORK_METERED,
+  PROP_CONNECTIVITY
+};
+
 struct _GWin32NetworkMonitorPrivate
 {
   gboolean initialized;
@@ -116,6 +125,98 @@ static void
 g_win32_network_monitor_init (GWin32NetworkMonitor *win)
 {
   win->priv = g_win32_network_monitor_get_instance_private (win);
+}
+
+static gboolean
+gwin32_network_monitor_is_available (NL_NETWORK_CONNECTIVITY_HINT hint)
+{
+  /**
+   * Checks if the network is available. "Available" here means that the
+   * system has a default route available for at least one of IPv4 or
+   * IPv6. It does not necessarily imply that the public Internet is
+   * reachable. 
+   * See #GNetworkMonitor:network-available for more details.
+   */
+
+  switch (hint.ConnectivityLevel)
+    {
+      case NetworkConnectivityLevelHintInternetAccess:
+      case NetworkConnectivityLevelHintConstrainedInternetAccess:
+        return TRUE;
+      default:
+        break;
+    } 
+  return FALSE;
+}
+
+static gboolean
+gwin32_network_monitor_is_metered (NL_NETWORK_CONNECTIVITY_HINT hint)
+{
+  /**
+   * Checks if the network is metered.
+   * See #GNetworkMonitor:network-metered for more details.
+   */
+
+  switch (hint.ConnectivityCost)
+    {
+      case NetworkConnectivityCostHintFixed:
+      case NetworkConnectivityCostHintVariable:
+        return TRUE;
+      default:
+        break;
+    } 
+  return FALSE;
+}
+
+static GNetworkConnectivity
+gwin32_network_monitor_get_connectivity (NL_NETWORK_CONNECTIVITY_HINT hint)
+{
+  /**
+   * Checks if the network is available. "Available" here means that the
+   * system has a default route available for at least one of IPv4 or
+   * IPv6. It does not necessarily imply that the public Internet is
+   * reachable. 
+   * See #GNetworkMonitor:network-available for more details.
+   */
+
+  switch (hint.ConnectivityLevel)
+    {
+      case NetworkConnectivityLevelHintInternetAccess:
+        return G_NETWORK_CONNECTIVITY_FULL;
+      case NetworkConnectivityLevelHintConstrainedInternetAccess:
+        return G_NETWORK_CONNECTIVITY_PORTAL;
+      default:
+        break;
+    } 
+  return G_NETWORK_CONNECTIVITY_LOCAL;
+}
+
+static void
+g_win32_network_monitor_get_property (GObject    *object,
+                                   guint       prop_id,
+                                   GValue     *value,
+                                   GParamSpec *pspec)
+{
+  GWin32NetworkMonitor *win = G_WIN32_NETWORK_MONITOR (object);
+
+  switch (prop_id)
+    {
+    case PROP_NETWORK_AVAILABLE:
+      g_value_set_boolean (value, gwin32_network_monitor_is_available(win->priv->hint));
+      break;
+
+    case PROP_NETWORK_METERED:
+      g_value_set_boolean (value, gwin32_network_monitor_is_metered(win->priv->hint));
+      break;
+
+    case PROP_CONNECTIVITY:
+      g_value_set_enum (value, gwin32_network_monitor_get_connectivity(win->priv->hint));
+      break;
+
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+    }
 }
 
 static const gchar * g_wind32_network_monitor_connectivity_level_to_string (NL_NETWORK_CONNECTIVITY_LEVEL_HINT level)
@@ -493,7 +594,16 @@ win_network_monitor_invoke_connectivity_hint (gpointer user_data)
         g_warning ("Failed to update routing table! %s", error->message);
         g_clear_error (&error);
       }
+
+      gboolean send_network_metered = (connectivity_hint_data->win->priv->hint.ConnectivityCost != connectivity_hint_data->hint.ConnectivityCost);
+      gboolean send_connectivity = (connectivity_hint_data->win->priv->hint.ConnectivityLevel != connectivity_hint_data->hint.ConnectivityLevel);
       connectivity_hint_data->win->priv->hint = connectivity_hint_data->hint;
+
+      /* network_available nitification is handled in the gnetworkmonitorbase */
+      if (send_network_metered)
+        g_object_notify (G_OBJECT (connectivity_hint_data->win), "network-metered");
+      if (send_connectivity)
+        g_object_notify (G_OBJECT (connectivity_hint_data->win), "connectivity");
     }
 
   g_mutex_unlock (&connectivity_hint_data->win->priv->mutex);
@@ -602,6 +712,11 @@ g_win32_network_monitor_class_init (GWin32NetworkMonitorClass *win_class)
   GObjectClass *gobject_class = G_OBJECT_CLASS (win_class);
 
   gobject_class->finalize = g_win32_network_monitor_finalize;
+  gobject_class->get_property = g_win32_network_monitor_get_property;
+
+  g_object_class_override_property (gobject_class, PROP_NETWORK_AVAILABLE, "network-available");
+  g_object_class_override_property (gobject_class, PROP_NETWORK_METERED, "network-metered");
+  g_object_class_override_property (gobject_class, PROP_CONNECTIVITY, "connectivity");
 }
 
 static void
