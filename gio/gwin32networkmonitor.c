@@ -561,13 +561,19 @@ win_network_monitor_invoke_connectivity_hint (gpointer user_data)
 {
   GSocketFamily family;
   ConnectivityHintData * connectivity_hint_data = user_data;
+  gboolean send_connectivity_notification = FALSE;
+  gboolean send_network_metered_notification = (connectivity_hint_data->win->priv->hint.ConnectivityCost != connectivity_hint_data->hint.ConnectivityCost);
 
+  g_warning ("here %d %d", connectivity_hint_data->hint.ConnectivityLevel, connectivity_hint_data->hint.ConnectivityCost);
+  g_warning ("state %d %d", connectivity_hint_data->win->priv->hint.ConnectivityLevel, connectivity_hint_data->win->priv->hint.ConnectivityCost);
   g_mutex_lock (&connectivity_hint_data->win->priv->mutex);
-  if (memcmp (&connectivity_hint_data->win->priv->hint, &connectivity_hint_data->hint, sizeof(NL_NETWORK_CONNECTIVITY_HINT)) != 0)
+
+  if (connectivity_hint_data->win->priv->hint.ConnectivityLevel != connectivity_hint_data->hint.ConnectivityLevel)
     {
       g_debug ("Connectivity state change %s -> %s", 
         g_wind32_network_monitor_connectivity_level_to_string(connectivity_hint_data->win->priv->hint.ConnectivityLevel), 
         g_wind32_network_monitor_connectivity_level_to_string(connectivity_hint_data->hint.ConnectivityLevel));
+      send_connectivity_notification = TRUE;
       GError * error = NULL;
       switch (connectivity_hint_data->hint.ConnectivityLevel)
         {
@@ -594,19 +600,17 @@ win_network_monitor_invoke_connectivity_hint (gpointer user_data)
         g_warning ("Failed to update routing table! %s", error->message);
         g_clear_error (&error);
       }
-
-      gboolean send_network_metered = (connectivity_hint_data->win->priv->hint.ConnectivityCost != connectivity_hint_data->hint.ConnectivityCost);
-      gboolean send_connectivity = (connectivity_hint_data->win->priv->hint.ConnectivityLevel != connectivity_hint_data->hint.ConnectivityLevel);
-      connectivity_hint_data->win->priv->hint = connectivity_hint_data->hint;
-
-      /* network_available nitification is handled in the gnetworkmonitorbase */
-      if (send_network_metered)
-        g_object_notify (G_OBJECT (connectivity_hint_data->win), "network-metered");
-      if (send_connectivity)
-        g_object_notify (G_OBJECT (connectivity_hint_data->win), "connectivity");
     }
 
+  connectivity_hint_data->win->priv->hint = connectivity_hint_data->hint;
+
   g_mutex_unlock (&connectivity_hint_data->win->priv->mutex);
+
+  /* network_available nitification is handled in the gnetworkmonitorbase */
+  if (send_network_metered_notification)
+    g_object_notify (G_OBJECT (connectivity_hint_data->win), "network-metered");
+  if (send_connectivity_notification)
+    g_object_notify (G_OBJECT (connectivity_hint_data->win), "connectivity");
 
   return G_SOURCE_REMOVE;
 }
