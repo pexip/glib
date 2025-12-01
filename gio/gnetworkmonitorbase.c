@@ -584,4 +584,7 @@ g_network_monitor_base_set_networks (GNetworkMonitorBase  *monitor,
 
   for (i = 0; i < length; i++)
     g_network_monitor_base_add_network (monitor, networks[i]);
+
+  if (length == 0)
+    queue_network_changed (monitor);
 }
