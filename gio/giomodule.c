@@ -1107,7 +1107,11 @@ extern GType g_network_monitor_portal_get_type (void);
 
 #ifdef HAVE_COCOA
 extern GType g_cocoa_notification_backend_get_type (void);
+<<<<<<< HEAD
 extern GType g_osx_network_monitor_get_type (void);
+=======
+extern GType _g_apple_network_monitor_get_type (void);
+>>>>>>> f034958ca (gio/gnetworkmonitor: add apple macOS/ISO backend.)
 #endif
 
 #ifdef G_PLATFORM_WIN32
