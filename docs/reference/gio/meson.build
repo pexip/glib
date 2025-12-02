@@ -84,6 +84,7 @@ if get_option('gtk_doc')
     'gunixresolver.h',
     'gunixvolume.h',
     'gunixvolumemonitor.h',
+    'gapplenetworkmonitor.h',
     'gwin32networkmonitor.h',
     'gwin32api-application-activation-manager.h',
     'gwin32api-iterator.h',
