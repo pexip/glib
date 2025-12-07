@@ -340,7 +340,8 @@ win_network_monitor_process_table (GWin32NetworkMonitor  *win,
   g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (win),
                                        (GInetAddressMask **) networks->pdata,
                                        networks->len);
-
+  g_ptr_array_free (networks, TRUE);
+  
   return TRUE;
 }
 
