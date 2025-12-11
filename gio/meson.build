@@ -410,10 +410,11 @@ if host_system != 'windows'
     settings_sources += files('gnextstepsettingsbackend.m')
     contenttype_sources += files('gcontenttype-osx.m')
     unix_sources += files('gosxappinfo.m')
-    framework_dep = dependency('appleframeworks', modules : ['Foundation', 'CoreFoundation', 'AppKit'])
+    framework_dep = dependency('appleframeworks', modules : ['Foundation', 'CoreFoundation', 'AppKit', 'Network'])
     platform_deps += [framework_dep]
     unix_sources += files('gcocoanotificationbackend.m')
-    unix_sources += files('gosxnetworkmonitor.c')
+    #unix_sources += files('gosxnetworkmonitor.c')
+    unix_sources += files('gapplenetworkmonitor.m')
     application_headers += files('gosxappinfo.h')
   else
     contenttype_sources += files('gcontenttype-fdo.c')

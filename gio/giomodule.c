@@ -1107,11 +1107,8 @@ extern GType g_network_monitor_portal_get_type (void);
 
 #ifdef HAVE_COCOA
 extern GType g_cocoa_notification_backend_get_type (void);
-<<<<<<< HEAD
-extern GType g_osx_network_monitor_get_type (void);
-=======
-extern GType _g_apple_network_monitor_get_type (void);
->>>>>>> f034958ca (gio/gnetworkmonitor: add apple macOS/ISO backend.)
+/* extern GType g_osx_network_monitor_get_type (void); */
+extern GType g_apple_network_monitor_get_type (void);
 #endif
 
 #ifdef G_PLATFORM_WIN32
@@ -1368,7 +1365,8 @@ _g_io_modules_ensure_loaded (void)
       g_type_ensure (g_cocoa_notification_backend_get_type ());
       g_type_ensure (g_nextstep_settings_backend_get_type ());
       g_type_ensure (g_osx_app_info_get_type ());
-      g_type_ensure (g_osx_network_monitor_get_type ());
+      /* g_type_ensure (g_osx_network_monitor_get_type ()); */
+      g_type_ensure (g_apple_network_monitor_get_type ());
 #endif
 #ifdef G_OS_UNIX
       g_type_ensure (_g_unix_volume_monitor_get_type ());
