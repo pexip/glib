@@ -1039,6 +1039,11 @@ if host_system == 'darwin'
   endif
 endif
 
+if host_system == 'ios'
+  add_languages('objc', native: false, required: true)
+  objcc = meson.get_compiler('objc')
+endif
+
 if host_system == 'qnx'
   glib_conf.set('HAVE_QNX', 1)
 endif
