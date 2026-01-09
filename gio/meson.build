@@ -407,6 +407,12 @@ if host_system != 'windows'
     unix_sources += files('gmemorymonitorpsi.c')
   endif
 
+  if host_system in ['ios', 'darwin']
+    framework_dep = dependency('appleframeworks', modules : ['Network'])
+    platform_deps += [framework_dep]
+    unix_sources += files('gapplenetworkmonitor.m')
+  endif
+
   if glib_have_cocoa
     settings_sources += files('gnextstepsettingsbackend.m')
     contenttype_sources += files('gcontenttype-osx.m')
@@ -415,7 +421,6 @@ if host_system != 'windows'
     framework_dep = dependency('appleframeworks', modules : ['Foundation', 'CoreFoundation', 'AppKit'])
     platform_deps += [framework_dep]
     unix_sources += files('gcocoanotificationbackend.m')
-    unix_sources += files('gosxnetworkmonitor.c')
     application_headers += files('gosxappinfo.h')
   else
     contenttype_sources += files('gcontenttype-fdo.c')
