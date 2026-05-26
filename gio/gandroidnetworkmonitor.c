@@ -283,8 +283,7 @@ route_new (RouteType type, int af, const char *if_name)
   route->af = af;
   if (if_name)
     {
-      strncpy (route->if_name, if_name, sizeof (route->if_name) - 1);
-      route->if_name[sizeof (route->if_name) - 1] = '\0';
+      g_strlcpy (route->if_name, if_name, sizeof (route->if_name));
     }
   return route;
 }
@@ -353,7 +352,10 @@ parse_route_descriptor (const char *desc)
     return NULL;
 
   parts = g_strsplit (desc, ";", -1);
-  if (g_strv_length (parts) < 6)
+  /* We need at least 6 fields. Check parts[5] without walking the entire
+   * array. */
+  if (parts[0] == NULL || parts[1] == NULL || parts[2] == NULL ||
+      parts[3] == NULL || parts[4] == NULL || parts[5] == NULL)
     {
       g_strfreev (parts);
       return NULL;
