@@ -338,14 +338,23 @@ if glib_build_shared and glib_build_static and (
   error('On Windows default_library must be "shared" or "static" but not "both"')
 endif
 
+# Static build defines are not written to glibconfig.h, because the installed
+# header must not force a static view on consumers of a shared build of GLib.
+# Instead they are passed on the command line for GLib's own translation units
+# (so that GLIB_VAR & co. are a plain `extern` while the data is being defined)
+# and exported in the pkg-config Cflags for consumers of the static build.
+glib_static_compilation_cflags = []
 if glib_build_static_only
-  glibconfig_conf.set('GLIB_STATIC_COMPILATION', '1')
-  glibconfig_conf.set('GOBJECT_STATIC_COMPILATION', '1')
-  glibconfig_conf.set('GIO_STATIC_COMPILATION', '1')
-  glibconfig_conf.set('GMODULE_STATIC_COMPILATION', '1')
+  glib_static_compilation_cflags = [
+    '-DGLIB_STATIC_COMPILATION',
+    '-DGOBJECT_STATIC_COMPILATION',
+    '-DGIO_STATIC_COMPILATION',
+    '-DGMODULE_STATIC_COMPILATION',
+    '-DG_INTL_STATIC_COMPILATION',
+  ]
+  add_project_arguments(glib_static_compilation_cflags + ['-DFFI_STATIC_BUILD'],
+                        language: ['c', 'cpp', 'objc', 'objcpp'])
   glibconfig_conf.set('GI_STATIC_COMPILATION', '1')
-  glibconfig_conf.set('G_INTL_STATIC_COMPILATION', '1')
-  glibconfig_conf.set('FFI_STATIC_BUILD', '1')
 endif
 
 # Cygwin glib port maintainers made it clear

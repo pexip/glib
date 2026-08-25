@@ -924,6 +924,7 @@ libgio_dep = declare_dependency(link_with : libgio,
 
 pkg.generate(libgio,
   requires : ['glib-2.0', 'gobject-2.0'],
+  extra_cflags : glib_static_compilation_cflags,
   variables : [
     'schemasdir=' + '${datadir}' / schemas_subdir,
     'dtdsdir=' + '${datadir}' / dtds_subdir,

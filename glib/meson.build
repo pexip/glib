@@ -464,7 +464,7 @@ pkg.generate(libglib,
   libraries : [libintl_deps],
   libraries_private : [win32_ldflags],
   subdirs : ['glib-2.0'],
-  extra_cflags : ['-I${libdir}/glib-2.0/include'] + win32_cflags,
+  extra_cflags : ['-I${libdir}/glib-2.0/include'] + win32_cflags + glib_static_compilation_cflags,
   variables : [
     'glib_genmarshal=' + '${bindir}' / 'glib-genmarshal',
     'gobject_query=' + '${bindir}' / 'gobject-query',
