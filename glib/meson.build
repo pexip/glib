@@ -434,6 +434,7 @@ libglib = library('glib-2.0',
 
 libglib_dep = declare_dependency(
   link_with : libglib,
+  compile_args : glib_static_compilation_cflags,
   dependencies : libintl_deps,
   sources : glib_built_headers,
   # We sadly need to export configinc here because everyone includes <glib/*.h>
