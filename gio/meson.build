@@ -924,6 +924,7 @@ libgio_dep = declare_dependency(link_with : libgio,
 
 pkg.generate(libgio,
   requires : ['glib-2.0', 'gobject-2.0'],
+  extra_cflags : glib_static_compilation_cflags,
   variables : [
     'schemasdir=' + '${datadir}' / schemas_subdir,
     'dtdsdir=' + '${datadir}' / dtds_subdir,
@@ -958,6 +959,7 @@ meson.override_dependency('gio-2.0', libgio_dep)
 if host_system == 'windows'
   pkg.generate(requires : ['gobject-2.0', 'gmodule-no-export-2.0', 'gio-2.0'],
     subdirs : ['gio-win32-2.0'],
+    extra_cflags : glib_static_compilation_cflags,
     version : glib_version,
     install_dir : glib_pkgconfigreldir,
     filebase : 'gio-windows-2.0',
@@ -968,6 +970,7 @@ if host_system == 'windows'
 else
   pkg.generate(requires : ['gobject-2.0', 'gio-2.0'],
     subdirs : ['gio-unix-2.0'],
+    extra_cflags : glib_static_compilation_cflags,
     version : glib_version,
     install_dir : glib_pkgconfigreldir,
     filebase : 'gio-unix-2.0',

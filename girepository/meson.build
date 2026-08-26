@@ -243,6 +243,7 @@ pkg.generate(libgirepository,
   install_dir: glib_pkgconfigreldir,
   description: 'GObject Introspection repository parser',
   variables: pkgconfig_variables,
+  extra_cflags: glib_static_compilation_cflags,
   libraries: [libglib_dep, libgobject_dep],
 )
 
