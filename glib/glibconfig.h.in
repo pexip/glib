@@ -18,10 +18,6 @@
 
 #include <glib/gversionmacros.h>
 
-#mesondefine GLIB_STATIC_COMPILATION
-#mesondefine GOBJECT_STATIC_COMPILATION
-#mesondefine GIO_STATIC_COMPILATION
-#mesondefine GMODULE_STATIC_COMPILATION
 #mesondefine GI_STATIC_COMPILATION
 
 /* Specifies that GLib's g_print*() functions wrap the

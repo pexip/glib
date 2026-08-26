@@ -162,6 +162,7 @@ libgobject = library('gobject-2.0',
 
 pkg.generate(libgobject,
   requires : ['glib-2.0'],
+  extra_cflags : glib_static_compilation_cflags,
   version : glib_version,
   install_dir : glib_pkgconfigreldir,
   filebase : 'gobject-2.0',
