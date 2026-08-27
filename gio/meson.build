@@ -166,6 +166,16 @@ if host_system == 'android'
                         name : 'ip_mreq_source.imr_interface has s_addr member')
     glib_conf.set('BROKEN_IP_MREQ_SOURCE_STRUCT', 1)
   endif
+
+  # Android network monitor: bridges to ConnectivityManager via JNI.
+  # JNI headers are bundled with the NDK; symbols are resolved at runtime
+  # by the host Java process, so no extra link dependency is required for
+  # JNI itself. We still pick up liblog so the helper can use logcat if
+  # we ever need it.
+  android_log_dep = cc.find_library('log', required : false)
+  if android_log_dep.found()
+    platform_deps += [android_log_dep]
+  endif
 endif
 
 gnetworking_h_conf.set('NAMESER_COMPAT_INCLUDE', gnetworking_h_nameser_compat_include)
@@ -410,6 +420,12 @@ if host_system != 'windows'
     framework_dep = dependency('appleframeworks', modules : ['Network'])
     platform_deps += [framework_dep]
     unix_sources += files('gapplenetworkmonitor.m')
+  endif
+
+  if host_system == 'android'
+    unix_sources += files('gandroidnetworkmonitor.c')
+    install_headers(files('gandroidnetworkmonitor.h'),
+                    subdir : 'gio-android-2.0/gio')
   endif
 
   if glib_have_cocoa
