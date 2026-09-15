@@ -23,10 +23,12 @@
 #include "config.h"
 
 #include <Network/Network.h>
+#include <Availability.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <ifaddrs.h>
 #include <net/if.h>
+#include <stdlib.h>
 
 #include "gapplenetworkmonitor.h"
 #include "ginetaddress.h"
@@ -59,6 +61,7 @@ struct _GAppleNetworkMonitorPrivate
   GError *init_error;
   GMainContext *main_context;
   GSource *status_change_source;
+  GMutex status_change_lock;
 
   nw_path_monitor_t monitor;
   dispatch_queue_t queue;
@@ -89,6 +92,7 @@ static void
 g_apple_network_monitor_init (GAppleNetworkMonitor *apple)
 {
   apple->priv = g_apple_network_monitor_get_instance_private (apple);
+  g_mutex_init (&apple->priv->status_change_lock);
 }
 
 static void
@@ -99,7 +103,9 @@ g_apple_network_monitor_get_property (GObject *object, guint prop_id, GValue *va
   switch (prop_id)
     {
     case PROP_NETWORK_AVAILABLE:
-      g_value_set_boolean (value, (apple->priv->status == nw_path_status_satisfied));
+      g_value_set_boolean (value,
+                           (apple->priv->status == nw_path_status_satisfied ||
+                            apple->priv->status == nw_path_status_satisfiable));
       break;
 
     case PROP_NETWORK_METERED:
@@ -107,8 +113,11 @@ g_apple_network_monitor_get_property (GObject *object, guint prop_id, GValue *va
       break;
 
     case PROP_CONNECTIVITY:
-      g_value_set_enum (value, apple->priv->status == nw_path_status_satisfied ? G_NETWORK_CONNECTIVITY_FULL
-                                                                               : G_NETWORK_CONNECTIVITY_LOCAL);
+      g_value_set_enum (value,
+                        (apple->priv->status == nw_path_status_satisfied ||
+                         apple->priv->status == nw_path_status_satisfiable)
+                            ? G_NETWORK_CONNECTIVITY_FULL
+                            : G_NETWORK_CONNECTIVITY_LOCAL);
       break;
 
     default:
@@ -150,6 +159,9 @@ typedef struct
   gboolean has_dns;
   gboolean has_ipv4;
   gboolean has_ipv6;
+  gboolean has_tunnel_interface;
+  char *unsatisfied_reason;
+  GPtrArray *interfaces;
 
   GList *ipv4_gateways; /*List of Route instances */
   GList *ipv6_gateways; /*List of Route instances */
@@ -174,6 +186,8 @@ network_status_data_free (NetworkStatusData *ptr)
 {
   if (ptr)
     {
+      g_free (ptr->unsatisfied_reason);
+      g_clear_pointer (&ptr->interfaces, g_ptr_array_unref);
       g_list_free_full (ptr->ipv4_gateways, g_free);
       g_list_free_full (ptr->ipv6_gateways, g_free);
       g_list_free_full (ptr->local_routes, g_free);
@@ -181,10 +195,74 @@ network_status_data_free (NetworkStatusData *ptr)
     }
 }
 
+static const char *
+_nw_interface_type_to_string (nw_interface_type_t type)
+{
+  switch (type)
+    {
+    case nw_interface_type_wifi:
+      return "wifi";
+    case nw_interface_type_cellular:
+      return "cellular";
+    case nw_interface_type_wired:
+      return "wired";
+    case nw_interface_type_loopback:
+      return "loopback";
+    case nw_interface_type_other:
+      return "other";
+    default:
+      return "unknown";
+    }
+}
+
+static gboolean
+_nw_interface_name_is_tunnel (const char *if_name)
+{
+  if (if_name == NULL)
+    return FALSE;
+
+  return g_str_has_prefix (if_name, "utun") ||
+         g_str_has_prefix (if_name, "ipsec") ||
+         g_str_has_prefix (if_name, "ppp");
+}
+
+#if (defined (MAC_OS_X_VERSION_12_0) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_12_0) || \
+    (defined (IPHONE_OS_VERSION_14_2) && IPHONE_OS_VERSION_MAX_ALLOWED >= IPHONE_OS_VERSION_14_2) || \
+    (defined (TV_OS_VERSION_14_2) && TV_OS_VERSION_MAX_ALLOWED >= TV_OS_VERSION_14_2) || \
+    (defined (WATCH_OS_VERSION_7_1) && WATCH_OS_VERSION_MAX_ALLOWED >= WATCH_OS_VERSION_7_1)
+#define HAVE_NW_PATH_UNSATISFIED_REASON 1
+#endif
+
+static const char *
+_nw_unsatisfied_reason_to_string (nw_path_t path)
+{
+#ifdef HAVE_NW_PATH_UNSATISFIED_REASON
+  if (__builtin_available (macOS 12.0, iOS 14.2, tvOS 14.2, watchOS 7.1, *))
+    {
+      switch (nw_path_get_unsatisfied_reason (path))
+        {
+        case nw_path_unsatisfied_reason_not_available:
+          return "no usable interface available";
+        case nw_path_unsatisfied_reason_cellular_denied:
+          return "cellular denied by user";
+        case nw_path_unsatisfied_reason_wifi_denied:
+          return "Wi-Fi denied by user";
+        case nw_path_unsatisfied_reason_local_network_denied:
+          return "local network access denied (privacy prompt)";
+        case nw_path_unsatisfied_reason_vpn_inactive:
+          return "required VPN is not active";
+        default:
+          return "unknown";
+        }
+    }
+#endif
+
+  return "unknown (requires macOS 12+)";
+}
+
 static void
 network_status_parse_gateway (NetworkStatusData *status_data, nw_endpoint_t gateway_endpoint)
 {
-  struct sockaddr *sa_copy = NULL;
   GList **list_ptr = NULL;
 
   const struct sockaddr *sa = nw_endpoint_get_address (gateway_endpoint);
@@ -367,13 +445,16 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
 
       if (local_route->af == AF_INET)
         {
+          const struct sockaddr_in *network_in = (const struct sockaddr_in *) &local_route->network;
           family = G_SOCKET_FAMILY_IPV4;
-          dest = (const guint8 *) &local_route->addr;
+          dest = (const guint8 *) &network_in->sin_addr;
         }
       else if (local_route->af == AF_INET6)
         {
+          const struct sockaddr_in6 *network_in6 =
+              (const struct sockaddr_in6 *) &local_route->network;
           family = G_SOCKET_FAMILY_IPV6;
-          dest = (const guint8 *) &local_route->addr;
+          dest = (const guint8 *) &network_in6->sin6_addr;
         }
 
       network = get_network_mask (family, dest, len);
@@ -383,15 +464,22 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
       g_ptr_array_add (networks, network);
     }
 
-  g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (apple), networks->pdata, networks->len);
+  g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (apple), (GInetAddressMask **) networks->pdata,
+                                       networks->len);
   g_ptr_array_free (networks, TRUE);
 }
 
 static void
 network_status_parse_interface_routes (NetworkStatusData *status_data)
 {
-  struct ifaddrs *ifaddr, *ifa;
-  getifaddrs (&ifaddr);
+  struct ifaddrs *ifaddr = NULL;
+  struct ifaddrs *ifa;
+
+  if (getifaddrs (&ifaddr) != 0)
+    {
+      g_debug ("getifaddrs() failed: %s", g_strerror (errno));
+      return;
+    }
 
   for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
     {
@@ -448,8 +536,8 @@ static nw_interface_type_t
 _nw_path_get_interface_type (nw_path_t path)
 {
   /* Only call when nw_path_status_t == nw_path_status_satisfied.
-     We should never see nw_interface_type_loopback or nw_interface_type_other here,
-     but we parse all of them regardless, and default to nw_interface_type_other.
+     nw_interface_type_other is expected for VPN and tunnel interfaces.
+     Parse all types and default to nw_interface_type_other.
   */
 
   if (nw_path_uses_interface_type (path, nw_interface_type_wifi))
@@ -489,6 +577,7 @@ _network_update_log_update (NetworkStatusData *status_data, gboolean log_routing
       break;
     case nw_path_status_unsatisfied:
       msg = g_string_new ("Network path is DOWN (unsatisfied).");
+      g_string_append_printf (msg, " Reason: %s.", status_data->unsatisfied_reason);
       break;
     case nw_path_status_satisfied:
       msg = g_string_new ("Network path is UP.");
@@ -498,6 +587,12 @@ _network_update_log_update (NetworkStatusData *status_data, gboolean log_routing
         msg = g_string_append (msg, " Connected via Cellular.");
       if (status_data->apple->priv->interface_type == nw_interface_type_wired)
         msg = g_string_append (msg, " Connected via Ethernet.");
+      if (status_data->apple->priv->interface_type == nw_interface_type_other)
+        {
+          msg = g_string_append (msg, " Connected via VPN/other interface.");
+          if (status_data->has_tunnel_interface)
+            msg = g_string_append (msg, " Tunnel interface detected.");
+        }
 
       if (status_data->apple->priv->is_expensive)
         msg = g_string_append (msg, " Path is expensive (likely cellular).");
@@ -521,12 +616,29 @@ _network_update_log_update (NetworkStatusData *status_data, gboolean log_routing
         }
       break;
     case nw_path_status_satisfiable:
-      msg = g_string_new ("Network path is DOWN (satisfiable).");
+      msg = g_string_new (
+          "Network path is AVAILABLE (satisfiable - connection attempt required, e.g. on-demand VPN).");
+      break;
+    default:
+      msg = g_string_new ("Network path state is unknown.");
       break;
     }
 
+  g_string_append_printf (msg, " Raw status value=%d.", (int) status_data->apple->priv->status);
+  g_string_append_printf (msg, " Path has DNS=%s.", status_data->apple->priv->has_dns ? "yes" : "no");
+  g_string_append_printf (msg, " Path has IPv4=%s.", status_data->apple->priv->has_ipv4 ? "yes" : "no");
+  g_string_append_printf (msg, " Path has IPv6=%s.", status_data->apple->priv->has_ipv6 ? "yes" : "no");
+
+  if (status_data->interfaces != NULL)
+    {
+      guint i;
+      g_string_append (msg, "\nPath interfaces:");
+      for (i = 0; i < status_data->interfaces->len; i++)
+        g_string_append_printf (msg, "\n  - %s", (char *) g_ptr_array_index (status_data->interfaces, i));
+    }
+
   /* Print routing table */
-  if (status_data->apple->priv->status == nw_path_status_satisfied && log_routing_table)
+  if (log_routing_table)
     {
       int i;
       GList *lists[3] = { status_data->ipv4_gateways, status_data->ipv6_gateways, status_data->local_routes };
@@ -551,7 +663,6 @@ _network_update_log_update (NetworkStatusData *status_data, gboolean log_routing
 static gboolean
 _network_update_invoke_route_changed (gpointer user_data)
 {
-  GString *msg = NULL;
   NetworkStatusData *status_data = user_data;
 
   status_data->apple->priv->status = status_data->status;
@@ -570,6 +681,14 @@ _network_update_invoke_route_changed (gpointer user_data)
   /* Log the change */
   _network_update_log_update (status_data, TRUE);
 
+  g_mutex_lock (&status_data->apple->priv->status_change_lock);
+  if (status_data->apple->priv->status_change_source == g_main_current_source ())
+    {
+      g_source_unref (status_data->apple->priv->status_change_source);
+      status_data->apple->priv->status_change_source = NULL;
+    }
+  g_mutex_unlock (&status_data->apple->priv->status_change_lock);
+
   return G_SOURCE_REMOVE;
 }
 
@@ -578,17 +697,41 @@ _network_update_handler (nw_path_t path, GAppleNetworkMonitor *apple)
 {
   NetworkStatusData *status_data = g_new0 (NetworkStatusData, 1);
   status_data->apple = apple;
+  status_data->interfaces = g_ptr_array_new_with_free_func (g_free);
 
   status_data->status = nw_path_get_status (path);
-  if (status_data->status == nw_path_status_satisfied)
+  status_data->has_dns = nw_path_has_dns (path);
+  status_data->has_ipv4 = nw_path_has_ipv4 (path);
+  status_data->has_ipv6 = nw_path_has_ipv6 (path);
+  if (status_data->status == nw_path_status_unsatisfied)
+    status_data->unsatisfied_reason = g_strdup (_nw_unsatisfied_reason_to_string (path));
+
+  nw_path_enumerate_interfaces (path, ^bool (nw_interface_t interface) {
+    const char *if_name = nw_interface_get_name (interface);
+    nw_interface_type_t if_type = nw_interface_get_type (interface);
+
+    g_ptr_array_add (status_data->interfaces,
+                     g_strdup_printf ("%s (%s)", if_name != NULL ? if_name : "<unknown>",
+                                      _nw_interface_type_to_string (if_type)));
+
+    if (_nw_interface_name_is_tunnel (if_name))
+      status_data->has_tunnel_interface = TRUE;
+
+    return true;
+  });
+
+  network_status_parse_interface_routes (status_data);
+
+  if (status_data->status == nw_path_status_satisfied ||
+      status_data->status == nw_path_status_satisfiable)
     {
       status_data->interface_type = _nw_path_get_interface_type (path);
       status_data->is_expensive = nw_path_is_expensive (path);
       status_data->is_constrained = nw_path_is_constrained (path);
-      status_data->has_dns = nw_path_has_dns (path);
-      status_data->has_ipv4 = nw_path_has_ipv4 (path);
-      status_data->has_ipv6 = nw_path_has_ipv6 (path);
+    }
 
+  if (status_data->status == nw_path_status_satisfied)
+    {
       nw_path_enumerate_gateways (path, ^bool (nw_endpoint_t gateway_endpoint) {
         nw_endpoint_type_t type = nw_endpoint_get_type (gateway_endpoint);
         if (type == nw_endpoint_type_address)
@@ -597,8 +740,14 @@ _network_update_handler (nw_path_t path, GAppleNetworkMonitor *apple)
           }
         return true;
       });
+    }
 
-      network_status_parse_interface_routes (status_data);
+  g_mutex_lock (&apple->priv->status_change_lock);
+  if (apple->priv->status_change_source != NULL)
+    {
+      g_source_destroy (apple->priv->status_change_source);
+      g_source_unref (apple->priv->status_change_source);
+      apple->priv->status_change_source = NULL;
     }
 
   apple->priv->status_change_source = g_idle_source_new ();
@@ -607,6 +756,7 @@ _network_update_handler (nw_path_t path, GAppleNetworkMonitor *apple)
                          (GDestroyNotify) network_status_data_free);
 
   g_source_attach (apple->priv->status_change_source, apple->priv->main_context);
+  g_mutex_unlock (&apple->priv->status_change_lock);
 }
 
 static gboolean
@@ -623,11 +773,12 @@ g_apple_network_monitor_initable_init (GInitable *initable, GCancellable *cancel
       if (!apple->priv->monitor)
         {
           g_warning ("Monitor creation failed.");
+          dispatch_release (apple->priv->queue);
+          apple->priv->queue = NULL;
           return FALSE;
         }
 
       nw_path_monitor_prohibit_interface_type (apple->priv->monitor, nw_interface_type_loopback);
-      nw_path_monitor_prohibit_interface_type (apple->priv->monitor, nw_interface_type_other);
       nw_path_monitor_set_queue (apple->priv->monitor, apple->priv->queue);
       nw_path_monitor_set_update_handler (apple->priv->monitor, ^(nw_path_t path) {
         _network_update_handler (path, apple);
@@ -659,17 +810,25 @@ g_apple_network_monitor_finalize (GObject *object)
       nw_path_monitor_cancel (apple->priv->monitor);
       nw_release (apple->priv->monitor);
       apple->priv->monitor = NULL;
+    }
+
+  if (apple->priv->queue)
+    {
       dispatch_release (apple->priv->queue);
       apple->priv->queue = NULL;
     }
 
+  g_mutex_lock (&apple->priv->status_change_lock);
   if (apple->priv->status_change_source != NULL)
     {
       g_source_destroy (apple->priv->status_change_source);
       g_source_unref (apple->priv->status_change_source);
+      apple->priv->status_change_source = NULL;
     }
+  g_mutex_unlock (&apple->priv->status_change_lock);
 
   g_main_context_unref (apple->priv->main_context);
+  g_mutex_clear (&apple->priv->status_change_lock);
 
   G_OBJECT_CLASS (g_apple_network_monitor_parent_class)->finalize (object);
 }
@@ -684,7 +843,7 @@ g_apple_network_monitor_class_init (GAppleNetworkMonitorClass *apple_class)
 
   g_object_class_override_property (gobject_class, PROP_NETWORK_AVAILABLE, "network-available");
   g_object_class_override_property (gobject_class, PROP_NETWORK_METERED, "network-metered");
-  //  g_object_class_override_property (gobject_class, PROP_CONNECTIVITY, "connectivity");
+  g_object_class_override_property (gobject_class, PROP_CONNECTIVITY, "connectivity");
 }
 
 static void
