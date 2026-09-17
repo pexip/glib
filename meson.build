@@ -1058,7 +1058,7 @@ if host_system == 'darwin' and subsystem == 'macos'
   endif
 endif
 
-if host_system == 'ios'
+if host_system == 'darwin' and subsystem == 'ios'
   add_languages('objc', native: false, required: true)
   objcc = meson.get_compiler('objc')
 endif
