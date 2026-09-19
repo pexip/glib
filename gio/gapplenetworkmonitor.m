@@ -160,6 +160,8 @@ typedef struct
   gboolean has_ipv4;
   gboolean has_ipv6;
   gboolean has_tunnel_interface;
+  gboolean has_ipv4_egress_via_tunnel;
+  gboolean has_ipv6_egress_via_tunnel;
   char *unsatisfied_reason;
   GPtrArray *interfaces;
 
@@ -349,6 +351,96 @@ subnet_mask_to_prefix_len (const struct sockaddr *mask)
   return -1;
 }
 
+static const char *
+_sockaddr_to_string (const struct sockaddr *addr, char *buf, gsize buf_len)
+{
+  if (addr == NULL)
+    return "<none>";
+
+  if (addr->sa_family == AF_INET)
+    {
+      const struct sockaddr_in *sin = (const struct sockaddr_in *) addr;
+      if (inet_ntop (AF_INET, &sin->sin_addr, buf, buf_len) != NULL)
+        return buf;
+    }
+  else if (addr->sa_family == AF_INET6)
+    {
+      const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *) addr;
+      if (inet_ntop (AF_INET6, &sin6->sin6_addr, buf, buf_len) != NULL)
+        return buf;
+    }
+
+  return "<unknown>";
+}
+
+static gboolean
+_ipv6_address_is_global_or_ula (const struct in6_addr *addr)
+{
+  const guint8 first_octet = addr->s6_addr[0];
+
+  return ((first_octet & 0xe0) == 0x20) ||
+         ((first_octet & 0xfe) == 0xfc);
+}
+
+static gboolean
+_route_has_tunnel_ipv4_egress (const Route *route)
+{
+  const struct sockaddr_in *dst_in;
+  guint32 ip;
+
+  if (!(route->if_flags & IFF_POINTOPOINT) || route->af != AF_INET)
+    return FALSE;
+
+  dst_in = (const struct sockaddr_in *) &route->dstaddr;
+  ip = ntohl (dst_in->sin_addr.s_addr);
+
+  return (ip == 0xC0000006) ||
+         (ip >= 0xC6000000 && ip <= 0xC6FFFFFF &&
+          route->prefix_len <= 8);
+}
+
+static gboolean
+_route_has_tunnel_ipv6_carrier (const Route *route)
+{
+  const struct sockaddr_in6 *addr_in6;
+  const struct sockaddr_in6 *dst_in6;
+
+  if (!(route->if_flags & IFF_POINTOPOINT) || route->af != AF_INET6)
+    return FALSE;
+
+  addr_in6 = (const struct sockaddr_in6 *) &route->addr;
+  dst_in6 = (const struct sockaddr_in6 *) &route->dstaddr;
+
+  return _ipv6_address_is_global_or_ula (&addr_in6->sin6_addr) ||
+         _ipv6_address_is_global_or_ula (&dst_in6->sin6_addr);
+}
+
+static gboolean
+_have_matching_tunnel_egress_routes (const NetworkStatusData *status_data)
+{
+  GList *ipv4_iter;
+
+  for (ipv4_iter = status_data->local_routes; ipv4_iter != NULL; ipv4_iter = ipv4_iter->next)
+    {
+      const Route *ipv4_route = ipv4_iter->data;
+      GList *ipv6_iter;
+
+      if (!_route_has_tunnel_ipv4_egress (ipv4_route))
+        continue;
+
+      for (ipv6_iter = status_data->local_routes; ipv6_iter != NULL; ipv6_iter = ipv6_iter->next)
+        {
+          const Route *ipv6_route = ipv6_iter->data;
+
+          if (_route_has_tunnel_ipv6_carrier (ipv6_route) &&
+              g_strcmp0 (ipv4_route->if_name, ipv6_route->if_name) == 0)
+            return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
 static void
 _print_route (Route *route, GString *msg)
 {
@@ -402,13 +494,16 @@ static void
 _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData *status_data)
 {
   GPtrArray *networks = NULL;
+  gboolean has_matching_tunnel_egress = _have_matching_tunnel_egress_routes (status_data);
   gint local_routes_len = g_list_length (status_data->local_routes);
-  gint route_count =
-      (local_routes_len + (status_data->ipv4_gateways == NULL ? 0 : 1) + (status_data->ipv6_gateways == NULL ? 0 : 1));
+  gint route_count = (local_routes_len +
+                      (status_data->ipv4_gateways == NULL ? 0 : 1) +
+                      (status_data->ipv6_gateways == NULL ? 0 : 1));
   GList *iter;
 
   if (route_count == 0)
     {
+      g_debug ("No routes available, clearing the network monitor base routes");
       g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (apple), NULL, 0);
       return;
     }
@@ -429,6 +524,38 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
       GInetAddressMask *network = get_network_mask (G_SOCKET_FAMILY_IPV6, NULL, 0);
       if (network != NULL)
         g_ptr_array_add (networks, network);
+    }
+
+  /* Add a synthetic IPv4 default route when IPv4 egress is only available
+     through a 4in6 / 464XLAT capable tunnel. The IPv6 carrier may be
+     represented either by an IPv6 default gateway or solely by a
+     point-to-point tunnel route, so this is evaluated independently of
+     the IPv6 gateway presence. */
+  if (status_data->ipv4_gateways == NULL)
+    {
+      if (status_data->has_ipv4_egress_via_tunnel &&
+          status_data->has_ipv6_egress_via_tunnel &&
+          has_matching_tunnel_egress)
+        {
+          GInetAddressMask *xlat_network = get_network_mask (G_SOCKET_FAMILY_IPV4, NULL, 0);
+          if (xlat_network != NULL)
+            {
+              g_debug ("Adding synthetic IPv4 default route (4in6 / 464XLAT egress detected)");
+              g_ptr_array_add (networks, xlat_network);
+            }
+          else
+            {
+              g_debug ("Failed to create synthetic IPv4 default route for 4in6 / 464XLAT egress");
+            }
+        }
+      else
+        {
+          g_debug ("Not adding synthetic IPv4 default route: has_ipv4_egress_via_tunnel=%s, "
+                   "has_ipv6_egress_via_tunnel=%s, matching_tunnel_interface=%s",
+                   status_data->has_ipv4_egress_via_tunnel ? "yes" : "no",
+                   status_data->has_ipv6_egress_via_tunnel ? "yes" : "no",
+                   has_matching_tunnel_egress ? "yes" : "no");
+        }
     }
 
   /* Add routes extracted from the local interfaces first */
@@ -463,6 +590,12 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
 
       g_ptr_array_add (networks, network);
     }
+
+  g_debug ("Setting %u network(s) on the network monitor base (%d local route(s), "
+           "IPv4 gateway=%s, IPv6 gateway=%s)",
+           networks->len, local_routes_len,
+           status_data->ipv4_gateways != NULL ? "yes" : "no",
+           status_data->ipv6_gateways != NULL ? "yes" : "no");
 
   g_network_monitor_base_set_networks (G_NETWORK_MONITOR_BASE (apple), (GInetAddressMask **) networks->pdata,
                                        networks->len);
@@ -525,11 +658,73 @@ network_status_parse_interface_routes (NetworkStatusData *status_data)
       if (ifa->ifa_dstaddr)
         {
           memcpy (&route->dstaddr, ifa->ifa_dstaddr, ifa->ifa_dstaddr->sa_len);
+
+          /* Point-to-point interfaces (utun/ipsec) may provide IPv4 egress
+             through a 4in6 translation mechanism. */
+          if (ifa->ifa_flags & IFF_POINTOPOINT)
+            {
+              char buf_addr[INET6_ADDRSTRLEN];
+              char buf_dst[INET6_ADDRSTRLEN];
+
+              g_debug ("Examining point-to-point interface %s: family=%s addr=%s dstaddr=%s "
+                       "prefix_len=%d flags=0x%x",
+                       ifa->ifa_name, route->af == AF_INET ? "IPv4" : "IPv6",
+                       _sockaddr_to_string (ifa->ifa_addr, buf_addr, sizeof (buf_addr)),
+                       _sockaddr_to_string (ifa->ifa_dstaddr, buf_dst, sizeof (buf_dst)),
+                       prefix_len, (guint) ifa->ifa_flags);
+
+              if (route->af == AF_INET)
+                {
+                  const struct sockaddr_in *dst_in = (const struct sockaddr_in *) ifa->ifa_dstaddr;
+                  guint32 ip = ntohl (dst_in->sin_addr.s_addr);
+                  gboolean is_xlat_anchor = (ip == 0xC0000006);
+
+                  /* Either the 464XLAT anchor address (192.0.0.6, RFC 7335) or a
+                     large dummy block spanning outside the local subnets
+                     (e.g. 198.0.0.0/8) indicates IPv4 egress via the tunnel. */
+                  if (_route_has_tunnel_ipv4_egress (route))
+                    {
+                      g_debug ("Deduced 4in6 / 464XLAT capabilities on interface %s (reason: %s, dstaddr=0x%08x)",
+                               ifa->ifa_name, is_xlat_anchor ? "464XLAT anchor" : "dummy IPv4 block",
+                               ip);
+                      status_data->has_ipv4_egress_via_tunnel = TRUE;
+                    }
+                  else
+                    {
+                      g_debug ("No 4in6 / 464XLAT indication on interface %s (dstaddr=0x%08x, prefix_len=%d)",
+                               ifa->ifa_name, ip, prefix_len);
+                    }
+                }
+              else if (route->af == AF_INET6)
+                {
+                  gboolean has_carrier = _route_has_tunnel_ipv6_carrier (route);
+
+                  /* A global or ULA IPv6 prefix on a point-to-point route confirms
+                     that the tunnel is up and acting as a carrier. */
+                  if (has_carrier)
+                    {
+                      g_debug ("Deduced IPv6 egress via tunnel on interface %s", ifa->ifa_name);
+                      status_data->has_ipv6_egress_via_tunnel = TRUE;
+                    }
+                  else
+                    {
+                      g_debug ("Ignoring point-to-point IPv6 route on interface %s "
+                               "without a global or ULA carrier",
+                               ifa->ifa_name);
+                    }
+                }
+            }
         }
       status_data->local_routes = g_list_append (status_data->local_routes, route);
     }
 
   freeifaddrs (ifaddr);
+
+  g_debug ("Interface route parsing complete: %u local routes, has_ipv4_egress_via_tunnel=%s, "
+           "has_ipv6_egress_via_tunnel=%s",
+           g_list_length (status_data->local_routes),
+           status_data->has_ipv4_egress_via_tunnel ? "yes" : "no",
+           status_data->has_ipv6_egress_via_tunnel ? "yes" : "no");
 }
 
 static nw_interface_type_t
@@ -628,6 +823,10 @@ _network_update_log_update (NetworkStatusData *status_data, gboolean log_routing
   g_string_append_printf (msg, " Path has DNS=%s.", status_data->apple->priv->has_dns ? "yes" : "no");
   g_string_append_printf (msg, " Path has IPv4=%s.", status_data->apple->priv->has_ipv4 ? "yes" : "no");
   g_string_append_printf (msg, " Path has IPv6=%s.", status_data->apple->priv->has_ipv6 ? "yes" : "no");
+  g_string_append_printf (msg, " IPv4 egress via tunnel=%s.",
+                          status_data->has_ipv4_egress_via_tunnel ? "yes" : "no");
+  g_string_append_printf (msg, " IPv6 egress via tunnel=%s.",
+                          status_data->has_ipv6_egress_via_tunnel ? "yes" : "no");
 
   if (status_data->interfaces != NULL)
     {
