@@ -160,6 +160,8 @@ typedef struct
   gboolean has_ipv4;
   gboolean has_ipv6;
   gboolean has_tunnel_interface;
+  gboolean has_ipv4_egress_via_tunnel;
+  gboolean has_ipv6_egress_via_tunnel;
   char *unsatisfied_reason;
   GPtrArray *interfaces;
 
@@ -429,6 +431,14 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
       GInetAddressMask *network = get_network_mask (G_SOCKET_FAMILY_IPV6, NULL, 0);
       if (network != NULL)
         g_ptr_array_add (networks, network);
+
+      if (status_data->ipv4_gateways == NULL && status_data->has_ipv4_egress_via_tunnel && status_data->has_ipv6_egress_via_tunnel)
+        {
+          /* Add a fake ipv4 default route, since we have a IPv6 route and are using 4IN6 */
+          GInetAddressMask *network = get_network_mask (G_SOCKET_FAMILY_IPV4, NULL, 0);
+          if (network != NULL)
+            g_ptr_array_add (networks, network);
+        }
     }
 
   /* Add routes extracted from the local interfaces first */
@@ -525,6 +535,30 @@ network_status_parse_interface_routes (NetworkStatusData *status_data)
       if (ifa->ifa_dstaddr)
         {
           memcpy (&route->dstaddr, ifa->ifa_dstaddr, ifa->ifa_dstaddr->sa_len);
+
+          // Check for Point-to-Point interfaces (like your ipsec7 / utun setups)
+          if (ifa->ifa_flags & IFF_POINTOPOINT)
+            {
+              if (route->af == AF_INET)
+                {
+                  struct sockaddr_in *dst_in = (struct sockaddr_in *) ifa->ifa_dstaddr;
+                  uint32_t ip = ntohl (dst_in->sin_addr.s_addr);
+
+                  // Scenario 1: RFC 7050 464XLAT anchor found (192.0.0.6)
+                  // Scenario 2: Massive /8 dummy block spanning outside local subnets (e.g., 198.0.0.0/8)
+                  if (ip == 0x0C000006 || (ip >= 0xC6000000 && ip <= 0xC6FFFFFF && prefix_len <= 8))
+                    {
+                      g_debug ("Deducted 4in6 / 464XLAT capabilities on interface: %s", ifa->ifa_name);
+                      status_data->has_ipv4_egress_via_tunnel = TRUE; 
+                    }
+                }
+              else if (route->af == AF_INET6)
+                {
+                  // If you detect a global or ULA IPv6 prefix on a PTP route, 
+                  // it confirms the tunnel is up and acting as a carrier.
+                  status_data->has_ipv6_egress_via_tunnel = TRUE;
+                }
+            }
         }
       status_data->local_routes = g_list_append (status_data->local_routes, route);
     }
