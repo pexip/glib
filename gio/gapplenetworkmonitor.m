@@ -432,12 +432,15 @@ _network_update_set_base_routes (GAppleNetworkMonitor *apple, NetworkStatusData 
       if (network != NULL)
         g_ptr_array_add (networks, network);
 
-      if (status_data->ipv4_gateways == NULL && status_data->has_ipv4_egress_via_tunnel && status_data->has_ipv6_egress_via_tunnel)
+      /* Add a synthetic IPv4 default route when IPv4 egress is only available
+         through a 4in6 / 464XLAT capable tunnel. */
+      if (status_data->ipv4_gateways == NULL &&
+          status_data->has_ipv4_egress_via_tunnel &&
+          status_data->has_ipv6_egress_via_tunnel)
         {
-          /* Add a fake ipv4 default route, since we have a IPv6 route and are using 4IN6 */
-          GInetAddressMask *network = get_network_mask (G_SOCKET_FAMILY_IPV4, NULL, 0);
-          if (network != NULL)
-            g_ptr_array_add (networks, network);
+          GInetAddressMask *xlat_network = get_network_mask (G_SOCKET_FAMILY_IPV4, NULL, 0);
+          if (xlat_network != NULL)
+            g_ptr_array_add (networks, xlat_network);
         }
     }
 
@@ -536,26 +539,29 @@ network_status_parse_interface_routes (NetworkStatusData *status_data)
         {
           memcpy (&route->dstaddr, ifa->ifa_dstaddr, ifa->ifa_dstaddr->sa_len);
 
-          // Check for Point-to-Point interfaces (like your ipsec7 / utun setups)
+          /* Point-to-point interfaces (utun/ipsec) may provide IPv4 egress
+             through a 4in6 translation mechanism. */
           if (ifa->ifa_flags & IFF_POINTOPOINT)
             {
               if (route->af == AF_INET)
                 {
-                  struct sockaddr_in *dst_in = (struct sockaddr_in *) ifa->ifa_dstaddr;
-                  uint32_t ip = ntohl (dst_in->sin_addr.s_addr);
+                  const struct sockaddr_in *dst_in = (const struct sockaddr_in *) ifa->ifa_dstaddr;
+                  guint32 ip = ntohl (dst_in->sin_addr.s_addr);
 
-                  // Scenario 1: RFC 7050 464XLAT anchor found (192.0.0.6)
-                  // Scenario 2: Massive /8 dummy block spanning outside local subnets (e.g., 198.0.0.0/8)
-                  if (ip == 0x0C000006 || (ip >= 0xC6000000 && ip <= 0xC6FFFFFF && prefix_len <= 8))
+                  /* Either the 464XLAT anchor address (192.0.0.6, RFC 7335) or a
+                     large dummy block spanning outside the local subnets
+                     (e.g. 198.0.0.0/8) indicates IPv4 egress via the tunnel. */
+                  if (ip == 0xC0000006 ||
+                      (ip >= 0xC6000000 && ip <= 0xC6FFFFFF && prefix_len <= 8))
                     {
-                      g_debug ("Deducted 4in6 / 464XLAT capabilities on interface: %s", ifa->ifa_name);
-                      status_data->has_ipv4_egress_via_tunnel = TRUE; 
+                      g_debug ("Deduced 4in6 / 464XLAT capabilities on interface: %s", ifa->ifa_name);
+                      status_data->has_ipv4_egress_via_tunnel = TRUE;
                     }
                 }
               else if (route->af == AF_INET6)
                 {
-                  // If you detect a global or ULA IPv6 prefix on a PTP route, 
-                  // it confirms the tunnel is up and acting as a carrier.
+                  /* A global or ULA IPv6 prefix on a point-to-point route confirms
+                     that the tunnel is up and acting as a carrier. */
                   status_data->has_ipv6_egress_via_tunnel = TRUE;
                 }
             }
